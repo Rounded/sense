@@ -23,30 +23,36 @@ app.fn = {
 //Item class
 app.Item = function Item(opts){
   var options = opts || {};
-
-  this.descriptor = options.descriptor || 'It has no name';
-  this.sights = options.sights || 'You must be blind';
-  this.sounds = options.sounds || 'You must be deaf';
-  this.container = options.container || 'Not a container';
-  this.containedItems = options.containedItems || 'nothing';
-  this.getting = options.getting || 'Fingers?';
-  //this.getting = options.getting || 'Fingers?';
-  //this.getting = options.getting || 'Fingers?';
+  this.container = options.container || false;
+  this.comprisedOf = options.comprisedOf || [];
+  this.combineWith = options.combineWith || [];
+  //this.ambientLight = options.ambientLight || 0;
+  // the item accesses the ambient light set in the room var and passes it in to the look function
+  this.visual_secret_threshold = options.visual_secret_threshold || 0;
+  this.descriptor = options.descriptor;
+  this.sights = options.sights;
+  this.sounds = options.sounds;
+  this.getting = options.getting;
+  this.containedItems = options.containedItems;
+  this.dropping = options.dropping;
+  this.feels = options.feels;
 };
 
 app.Item.prototype = {
-  container:false,
-  comprisedOf:[],
-  combineWith:[],
-
   getDescriptor:function(){
-    if(this.descriptor.length > 0)
+    if(typeof this.descriptor !== "undefined")
       return app.fn.article(this.descriptor) + this.descriptor;
     else
-      return 'There is no name';
+      return 'It has no name';
   },
-  look:function(){
-    if (app.options.player_sight * app.options.player_perception > app.options.item_visual_secret_threshold) {
+  look:function(perception, ambientLight){
+      //playerPerception = perception || 0;
+      //ambientLight = ambientLight || 0;
+      console.log('item ambientLight '+ ambientLight);
+      console.log('item perception '+ perception);
+      console.log('item vst '+this.visual_secret_threshold);
+    
+    if (ambientLight * perception > this.visual_secret_threshold) {
       if(typeof this.descriptor !== "undefined") {
         return this.sights || 'It looks like a ' + this.descriptor + ', nothing more';
       }
@@ -54,10 +60,12 @@ app.Item.prototype = {
         return this.sights || 'You are not quite sure what it is';
       }
     } else {
-      return 'Unable to dicern details';
+      return 'Unable to see the details';
     }
   },
-
+  touch:function(){
+    return this.feels || 'It feels like ' + app.fn.article(this.descriptor) + this.descriptor;
+  },
   listen:function(){
     return this.sounds || 'The ' + this.descriptor + 'isn\'t emmitting any sounds.';
   },
@@ -92,156 +100,153 @@ app.Item.prototype = {
   },
 
   drop:function(){
-    return 'You toss the ' + this.descriptor + ' to the side';
+    return this.dropping || 'You toss the ' + this.descriptor + ' to the side';
+    //put item in parent of character item;
   }
 };
 
 })(window, $, window.app || {});
 (function(window,$,app){
-  app.options = {
-    player_sight : 10,
-    player_perception : 2,
-    item_visual_secret_threshold : 15
+//Player class
+  app.Player = function Player(opts, items){
+    this.inventory = items || [];
+    this.playerName = opts.playerName || "Anonymous";
+    this.perception = opts.perception || 0;
   };
 
-  //Weapon class (sub)
-  var Weapon = function Weapon(opts){
+  app.Player.prototype = {
+    addItem:function(whichItem){
+      this.inventory.push(whichItem);
+      return this.inventory;
+    }
+  };
+})(window, $, window.app || {});
+(function(window,$,app){
+//Weapon class (sub)
+  app.Weapon = function Weapon(opts){
     this.weapon = "yes.";
   };
 
-  Weapon.prototype = new app.Item();
-  Weapon.prototype.swing = function(){
-    console.log("swing");
+  app.Weapon.prototype = new app.Item();
+  app.Weapon.prototype.swing = function(){
+    //console.log("swing");
   };
 
-  //Player class
-  var Player = function Player(opts, items){
-    this.items = items || [];
-    this.name = opts.name || "Anonymous";
-  };
-
-  Player.prototype = {
-    addItem:function(whichItem){
-      this.items.push(whichItem);
-      return this.items;
+})(window, $, window.app || {});
+(function(window,$,app){
+//Room class
+app.Room = function Room(opts){
+  var options = opts || {}; // why this?
+  
+  this.visual_secret_threshold = options.visual_secret_threshold || 0;
+  this.ambientLight = options.ambientLight || 0;
+  this.discoveredItems = options.discoveredItems || [];
+  this.hiddenItems = options.hiddenItems || [];
+  this.descriptor = options.descriptor;
+  this.sights = options.sights;
+};
+app.Room.prototype = new app.Item();
+app.Room.prototype = {
+  //My First Override!
+  look:function(perception){
+    this.playerPerception = perception || 0;
+      console.log('room'+this.ambientLight);
+      console.log('room'+this.playerPerception);
+      console.log('room'+this.visual_secret_threshold);
+    if (this.ambientLight * this.playerPerception > this.visual_secret_threshold) {
+      return this.sights || "It\'s Just four walls, a floor, and ceiling";
+    } else {
+      return 'It\'s black as night';
     }
-  };
+  },
+  //Move items from hidden to discovered
+  revealItem:function(hiddenItem){
+    this.discoveredItems.push(hiddenItem);
+    return this.discoveredItems;
+  }
+  //Move items from discoverd to hidden
+};
 
-  //Test function
-  $(function(){
-    //Examples
-    var sword = new Weapon({
-      descriptor:"Big ass sword"
+})(window, $, window.app || {});
+(function(window,$,app){
+   
+    //Create Room Object passing descriptions and items in
+
+    var currentRoom = new app.Room({
+      visual_secret_threshold:10,
+      ambientLight:3,
+      hiddenItems:[flint],
+      discoveredItems:[puddle],
+      sights:"It appears to be a holding cell of sorts."
     });
+    //Create Items
+    
     var flint = new app.Item({
-      descriptor:"flint"
-
+      descriptor:"flint",
+      visual_secret_threshold:10
     });
     var puddle = new app.Item({
-      descriptor:"puddle",
-      container:true,
-      containedItems:['flint','dagger'],
-      sights:'It looks deeper than expected. Perhaps it is hidding something in its depths.'
+      descriptor : 'puddle',
+      container : true,
+      sights : 'It looks deeper than expected. Perhaps it is hidding something in its depths.',
+      containedItems : [flint],
+      sounds : 'The only sounds are those of the liquid dripping into it.'
     });
-
+    //Create Player
+    var currentPlayer = new app.Player(
+      {
+        playerName:"Sir Billiam",
+        perception:5
+      },
+      {
+        items:[sword,drawstringCapris]
+      }
+    );
+    var drawstringCapris = new app.Item({
+      descriptor:"drawsting capris",
+      sights:"You Look like an idiot wearing them."
+    });
+    var sword = new app.Item({
+      name : 'Great Sword of Pain and Injustice',
+      sights : 'It\'s the most badass thing you have ever laid your eyes on!',
+      sounds : 'Tilting your ear toward it, you can almost hear the whispers and cries of those that fell before it',
+      getting : 'You\'re afraid the blade\'s power will overwhelm you.'
+    });
+    //Create an array of those items
+    
+  //Test function
+  $(function(){
+    //declare some variable for the ui
     var textNode = $("#readout-content"),
         inputNode = $("#text-input"),
         buttonNode = $("#hidden-button");
     
-    textNode.append(puddle.getDescriptor())
-      .append("<br>"+puddle.look());
+    //read function
+    var read = function(value){
+      var str=value;
+      var str_array=str.split(" ");
+      //var inputString = $("#text-input").value;
+      console.log(str_array);
+      var action = str_array[1];
+      var item = str_array[2];
+      // if item is in the discovered items object
+    };
 
+    //append stuff the text node. later make a function that returns these.
+    console.log(currentRoom.ambientLight);
+    textNode.append(currentRoom.look(currentPlayer.perception)+"<br>")
+      .append(drawstringCapris.look(currentPlayer.perception, currentRoom.ambientLight));
+   
 
+    //Place the cursor in the input
     inputNode.focus();
-
-    inputNode.keyup(function(event){
-    if(event.keyCode == 13){
-        buttonNode.click();
-    }
+    //Run a function when user hits enter
+    inputNode.on("keyup",function(event){
+      if(event.keyCode === 13){
+        var value = $(this).val();
+        read(value);
+      }
+    });
 });
-
-  });
-  // var item = function (spec) {
-  //   var _this = {};
-
-  //   _this.get_name = function () {
-  //     return article(spec.name) + spec.name || '';
-  //   };
-
-  //   _this.look = function () {
-  //     if (player_sight * player_perception > item_visual_secret_threshold) {
-  //       if (spec.name) {
-  //         return spec.sights || 'It looks like a ' + spec.name + ', nothing more';
-  //       }
-  //       if (!spec.name) {
-  //         return spec.sights || 'You are not quite sure what it is';
-  //       }
-  //     } else {
-  //       return 'Unable to dicern details';
-  //     }
-  //   };
-
-  //   _this.listen = function () {
-  //     return spec.sounds || 'The ' + spec.name + ' isn\'t emmiting any noise.';
-  //   };
-
-  //   _this.take = function () {
-  //     return spec.getting || 'You cannot take the ' + spec.name;
-  //   };
-
-  //   _this.search = function () {
-  //     if (spec.contained_items){
-  //       //alert (spec.contained_items.length);
-  //       var items = '';
-  //       for (var i = 0; i < spec.contained_items.length; i++) {
-  //         items += 'You find ' + article(spec.name) + spec.contained_items[i] +'\n';
-  //       }
-  //       return items;
-  //     }else if (spec.container) {
-  //       return 'You grope around in it but find nothing.';
-  //     }else{
-  //       return 'The ' + spec.name + ' isn\'t a container.';
-  //     }
-  //   };
-
-  //   _this.drop = function () {
-  //     //remove item from inventory
-  //     return 'You toss the' + spec.name + ' to the side';
-  //   };
-
-  //   return _this;
-  // };
-
-  //var door = function(spec){
-    //var _this = item(spec);
-    //unique door functions and such;
-  //};
-  // var sword = item({
-  //   name : 'Great Sword of Pain and Injustice',
-  //   sights : 'It\'s the most badass thing you have ever laid your eyes on!',
-  //   sounds : 'Tilting your ear toward it, you can almost hear the whispers and cries of those that fell before it',
-  //   getting : 'You\'re afraid the blade\'s power will overwhelm you.'
-  // });
-  // var subject = item({
-  //   name : 'Puddle',
-  //   container : true,
-  //   sights : 'It is dark. You cannot see the bottom.',
-  //   contained_items : ['flint', 'dagger', 'liquid'],
-  //   sounds : 'The only sounds are those of the liquid dripping into it.'
-  // });
-  // document.writeln(sword.get_name());
-  // document.writeln(sword.look());
-  // document.writeln(sword.listen());
-  // document.writeln(sword.take());
-  // document.writeln(sword.search());
-  // document.writeln();
-  // document.writeln(subject.get_name());
-  // document.writeln(subject.look());
-  // document.writeln(subject.listen());
-  // document.writeln(subject.take());
-  // document.writeln(subject.search());
-
-
-
 
 })(window, $, window.app || {});

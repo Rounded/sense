@@ -6,6 +6,9 @@ module.exports = function (grunt) {
     '../js/app.js',
     '../js/fn.js',
     '../js/item.js',
+    '../js/player.js',
+    '../js/weapon.js',
+    '../js/room.js',
     '../js/program.js'
     ];
   //grunt.css_compiles = '../css/bootstrapwp.css';
@@ -34,13 +37,17 @@ module.exports = function (grunt) {
       }
     },
     watch: {
-        styles: {
+      styles: {
         files: ['../css/style.less'],
         tasks: ['css_task']
       },
       scripts: {
         files: grunt.jsFiles,
         tasks: ['js_task']
+      },
+      grunt: {
+        files: ['grunt.js'],
+        tasks: ['grunt']
       }
     }
 
@@ -50,5 +57,6 @@ module.exports = function (grunt) {
   grunt.registerTask('css_task', 'less');
   grunt.registerTask('js_task', 'concat min');
   grunt.registerTask('default', 'less');
+  grunt.registerTask('grunt', 'watch');
 
 };

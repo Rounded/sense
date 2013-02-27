@@ -3,30 +3,36 @@
 //Item class
 app.Item = function Item(opts){
   var options = opts || {};
-
-  this.descriptor = options.descriptor || 'It has no name';
-  this.sights = options.sights || 'You must be blind';
-  this.sounds = options.sounds || 'You must be deaf';
-  this.container = options.container || 'Not a container';
-  this.containedItems = options.containedItems || 'nothing';
-  this.getting = options.getting || 'Fingers?';
-  //this.getting = options.getting || 'Fingers?';
-  //this.getting = options.getting || 'Fingers?';
+  this.container = options.container || false;
+  this.comprisedOf = options.comprisedOf || [];
+  this.combineWith = options.combineWith || [];
+  //this.ambientLight = options.ambientLight || 0;
+  // the item accesses the ambient light set in the room var and passes it in to the look function
+  this.visual_secret_threshold = options.visual_secret_threshold || 0;
+  this.descriptor = options.descriptor;
+  this.sights = options.sights;
+  this.sounds = options.sounds;
+  this.getting = options.getting;
+  this.containedItems = options.containedItems;
+  this.dropping = options.dropping;
+  this.feels = options.feels;
 };
 
 app.Item.prototype = {
-  container:false,
-  comprisedOf:[],
-  combineWith:[],
-
   getDescriptor:function(){
-    if(this.descriptor.length > 0)
+    if(typeof this.descriptor !== "undefined")
       return app.fn.article(this.descriptor) + this.descriptor;
     else
-      return 'There is no name';
+      return 'It has no name';
   },
-  look:function(){
-    if (app.options.player_sight * app.options.player_perception > app.options.item_visual_secret_threshold) {
+  look:function(perception, ambientLight){
+      //playerPerception = perception || 0;
+      //ambientLight = ambientLight || 0;
+      console.log('item ambientLight '+ ambientLight);
+      console.log('item perception '+ perception);
+      console.log('item vst '+this.visual_secret_threshold);
+    
+    if (ambientLight * perception > this.visual_secret_threshold) {
       if(typeof this.descriptor !== "undefined") {
         return this.sights || 'It looks like a ' + this.descriptor + ', nothing more';
       }
@@ -34,10 +40,12 @@ app.Item.prototype = {
         return this.sights || 'You are not quite sure what it is';
       }
     } else {
-      return 'Unable to dicern details';
+      return 'Unable to see the details';
     }
   },
-
+  touch:function(){
+    return this.feels || 'It feels like ' + app.fn.article(this.descriptor) + this.descriptor;
+  },
   listen:function(){
     return this.sounds || 'The ' + this.descriptor + 'isn\'t emmitting any sounds.';
   },
@@ -72,7 +80,8 @@ app.Item.prototype = {
   },
 
   drop:function(){
-    return 'You toss the ' + this.descriptor + ' to the side';
+    return this.dropping || 'You toss the ' + this.descriptor + ' to the side';
+    //put item in parent of character item;
   }
 };
 
