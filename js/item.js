@@ -26,13 +26,13 @@ app.Item.prototype = {
       return 'It has no name';
   },
   look:function(perception, ambientLight){
-      //playerPerception = perception || 0;
-      //ambientLight = ambientLight || 0;
-      console.log('item ambientLight '+ ambientLight);
-      console.log('item perception '+ perception);
-      console.log('item vst '+this.visual_secret_threshold);
-    
-    if (ambientLight * perception > this.visual_secret_threshold) {
+      playerPerception = perception || 0;
+      roomAmbientLight = ambientLight || 0;
+      //console.log('item ambientLight '+ ambientLight);
+      //console.log('item perception '+ perception);
+      //console.log('item vst '+this.visual_secret_threshold);
+
+    if (roomAmbientLight * playerPerception > this.visual_secret_threshold) {
       if(typeof this.descriptor !== "undefined") {
         return this.sights || 'It looks like a ' + this.descriptor + ', nothing more';
       }

@@ -46,13 +46,13 @@ app.Item.prototype = {
       return 'It has no name';
   },
   look:function(perception, ambientLight){
-      //playerPerception = perception || 0;
-      //ambientLight = ambientLight || 0;
-      console.log('item ambientLight '+ ambientLight);
-      console.log('item perception '+ perception);
-      console.log('item vst '+this.visual_secret_threshold);
-    
-    if (ambientLight * perception > this.visual_secret_threshold) {
+      playerPerception = perception || 0;
+      roomAmbientLight = ambientLight || 0;
+      //console.log('item ambientLight '+ ambientLight);
+      //console.log('item perception '+ perception);
+      //console.log('item vst '+this.visual_secret_threshold);
+
+    if (roomAmbientLight * playerPerception > this.visual_secret_threshold) {
       if(typeof this.descriptor !== "undefined") {
         return this.sights || 'It looks like a ' + this.descriptor + ', nothing more';
       }
@@ -118,6 +118,16 @@ app.Item.prototype = {
     addItem:function(whichItem){
       this.inventory.push(whichItem);
       return this.inventory;
+    },
+    hasItem:function(whichItem){
+      //loop through inventory
+      for (var i = 0; i < this.inventory.length; i++) {
+        if (whichItem === this.inventory[i].descriptor) {
+          return true;
+        }else{
+          return false;
+        }
+      }
     }
   };
 })(window, $, window.app || {});
@@ -136,8 +146,8 @@ app.Item.prototype = {
 (function(window,$,app){
 //Room class
 app.Room = function Room(opts){
-  var options = opts || {}; // why this?
-  
+  var options = opts || {}; // Null Object Protection
+
   this.visual_secret_threshold = options.visual_secret_threshold || 0;
   this.ambientLight = options.ambientLight || 0;
   this.discoveredItems = options.discoveredItems || [];
@@ -149,11 +159,11 @@ app.Room.prototype = new app.Item();
 app.Room.prototype = {
   //My First Override!
   look:function(perception){
-    this.playerPerception = perception || 0;
-      console.log('room'+this.ambientLight);
-      console.log('room'+this.playerPerception);
-      console.log('room'+this.visual_secret_threshold);
-    if (this.ambientLight * this.playerPerception > this.visual_secret_threshold) {
+    var playerPerception = perception || 0;
+      //console.log('room'+this.ambientLight);
+      //console.log('room'+this.playerPerception);
+      //console.log('room'+this.visual_secret_threshold);
+    if (this.ambientLight * playerPerception > this.visual_secret_threshold) {
       return this.sights || "It\'s Just four walls, a floor, and ceiling";
     } else {
       return 'It\'s black as night';
@@ -163,24 +173,24 @@ app.Room.prototype = {
   revealItem:function(hiddenItem){
     this.discoveredItems.push(hiddenItem);
     return this.discoveredItems;
+  },
+
+  hasItem:function(whichItem){
+    //loop through discoveredItems
+    for (var i = 0; i < this.discoveredItems.length; i++) {
+      if (whichItem === this.discoveredItems[i].descriptor) {
+        return true;
+      }else{
+        return false;
+      }
+    }
   }
   //Move items from discoverd to hidden
 };
 
 })(window, $, window.app || {});
 (function(window,$,app){
-   
-    //Create Room Object passing descriptions and items in
-
-    var currentRoom = new app.Room({
-      visual_secret_threshold:10,
-      ambientLight:3,
-      hiddenItems:[flint],
-      discoveredItems:[puddle],
-      sights:"It appears to be a holding cell of sorts."
-    });
     //Create Items
-    
     var flint = new app.Item({
       descriptor:"flint",
       visual_secret_threshold:10
@@ -192,17 +202,7 @@ app.Room.prototype = {
       containedItems : [flint],
       sounds : 'The only sounds are those of the liquid dripping into it.'
     });
-    //Create Player
-    var currentPlayer = new app.Player(
-      {
-        playerName:"Sir Billiam",
-        perception:5
-      },
-      {
-        items:[sword,drawstringCapris]
-      }
-    );
-    var drawstringCapris = new app.Item({
+    var capris = new app.Item({
       descriptor:"drawsting capris",
       sights:"You Look like an idiot wearing them."
     });
@@ -212,31 +212,86 @@ app.Room.prototype = {
       sounds : 'Tilting your ear toward it, you can almost hear the whispers and cries of those that fell before it',
       getting : 'You\'re afraid the blade\'s power will overwhelm you.'
     });
+
+    //Create Room Object passing descriptions and items in
+    var currentRoom = new app.Room({
+      visual_secret_threshold:10,
+      ambientLight:0,
+      hiddenItems:[flint,sword],
+      discoveredItems:[puddle],
+      sights:"It appears to be a holding cell of sorts."
+    });
+
+    //Create Player
+    var currentPlayer = new app.Player(
+      {
+        playerName:"",
+        perception:5
+      },
+      [sword,capris]
+    );
     //Create an array of those items
-    
   //Test function
   $(function(){
     //declare some variable for the ui
     var textNode = $("#readout-content"),
         inputNode = $("#text-input"),
         buttonNode = $("#hidden-button");
-    
     //read function
     var read = function(value){
-      var str=value;
-      var str_array=str.split(" ");
-      //var inputString = $("#text-input").value;
-      console.log(str_array);
-      var action = str_array[1];
-      var item = str_array[2];
-      // if item is in the discovered items object
+      var str=value,
+          strArray=str.split(" "),
+          verb = strArray[0],
+          noun = strArray[1] || "room";
+          
+      //check if action exists
+      // if(typeof item[action] === "function"){
+      //   item[action]();
+      // }
+      var discoveredItems = currentRoom.discoveredItems;
+
+      for(var i = 0; i < discoveredItems.length; i++){
+        var item = discoveredItems[i],
+          descriptor = item.descriptor;
+
+        if(noun.toLowerCase() === descriptor.toLowerCase()){
+          if(typeof item[verb] === "function"){
+            //item and verb exist
+            console.log(item[verb]());
+            return;
+          }
+          else{
+            //item exists but verb does not
+            return;
+          }
+        }
+        else{
+          //item does not exist
+        }
+      }
+
+      //console.log ('noun: '+noun);
+      //console.log ('verb: '+verb);
+      // var thing = noun[verb]();
+      // if (typeof noun[verb]() === "function"){
+      //   // if item is in the discovered items object
+      //   // if (currentRoom.hasItem(noun) || currentPlayer.hasItem(noun)){
+      //   //   //textNode.append(noun.verb(currentPlayer.perception, currentRoom.ambientLight));
+      //   //   textNode.append('hello');
+      //   // }else{
+      //   //   textNode.append('nope');
+      //   // }
+      //   textNode.append('this');
+      // }else{
+      //   textNode.append('You want to do what with that?');
+      // }
     };
 
-    //append stuff the text node. later make a function that returns these.
-    console.log(currentRoom.ambientLight);
-    textNode.append(currentRoom.look(currentPlayer.perception)+"<br>")
-      .append(drawstringCapris.look(currentPlayer.perception, currentRoom.ambientLight));
-   
+    //console.log('Current Room: Ambient light = ' + currentRoom.ambientLight);
+    //console.log(currentRoom.hasItem(puddle));
+    //textNode.append((currentPlayer.playerName)+"<br>")
+      //.append(currentRoom.look(currentPlayer.perception)+"<br>")
+      //.append(capris.look(currentPlayer.perception, currentRoom.ambientLight));
 
     //Place the cursor in the input
     inputNode.focus();
@@ -245,8 +300,8 @@ app.Room.prototype = {
       if(event.keyCode === 13){
         var value = $(this).val();
         read(value);
+        this.value = '';
       }
     });
 });
-
 })(window, $, window.app || {});
