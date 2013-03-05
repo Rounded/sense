@@ -2,8 +2,6 @@
 //Room class
 app.Room = function Room(opts){
   var options = opts || {}; // Null Object Protection
-
-  this.visual_secret_threshold = options.visual_secret_threshold || 0;
   this.ambientLight = options.ambientLight || 0;
   this.discoveredItems = options.discoveredItems || [];
   this.hiddenItems = options.hiddenItems || [];
@@ -35,8 +33,6 @@ app.Room.prototype = {
     for (var i = 0; i < this.discoveredItems.length; i++) {
       if (whichItem === this.discoveredItems[i].descriptor) {
         return true;
-      }else{
-        return false;
       }
     }
   }

@@ -1,106 +1,80 @@
 (function(window,$,app){
     //Create Items
-    var flint = new app.Item({
-      descriptor:"flint",
-      visual_secret_threshold:10
+    //TODO: Fix this -> The order the items are created are important
+    //items first then containers followed by room and player
+    var items = {};
+    items.flint = new app.Item({
+      descriptor : "flint",
+      visual_secret_threshold : 10
     });
-    var puddle = new app.Item({
+    items.stone = new app.Item({
+      descriptor : 'stone'
+    });
+    items.puddle = new app.Item({
       descriptor : 'puddle',
       container : true,
       sights : 'It looks deeper than expected. Perhaps it is hidding something in its depths.',
-      containedItems : [flint],
+      containedItems : [items.flint, items.stone],
       sounds : 'The only sounds are those of the liquid dripping into it.'
     });
-    var capris = new app.Item({
-      descriptor:"drawsting capris",
-      sights:"You Look like an idiot wearing them."
+    items.capris = new app.Item({
+      descriptor : "capris",
+      sights : "You Look like an idiot wearing them."
     });
-    var sword = new app.Item({
-      name : 'Great Sword of Pain and Injustice',
+    items.sword = new app.Item({
+      descriptor : 'sword',
       sights : 'It\'s the most badass thing you have ever laid your eyes on!',
       sounds : 'Tilting your ear toward it, you can almost hear the whispers and cries of those that fell before it',
       getting : 'You\'re afraid the blade\'s power will overwhelm you.'
     });
-
     //Create Room Object passing descriptions and items in
     var currentRoom = new app.Room({
-      visual_secret_threshold:10,
-      ambientLight:0,
-      hiddenItems:[flint,sword],
-      discoveredItems:[puddle],
-      sights:"It appears to be a holding cell of sorts."
+      descriptor : 'cell',
+      visual_secret_threshold : 10,
+      ambientLight : 1,
+      hiddenItems : [items.flint, items.sword],
+      sights : "It appears to be a holding cell of sorts."
     });
 
     //Create Player
     var currentPlayer = new app.Player(
       {
-        playerName:"",
-        perception:5
-      },
-      [sword,capris]
+        playerName : "Bob",
+        perception : 5,
+        inventory : [],
+        knownItems : {
+          currentRoom : [currentRoom, items.puddle, items.sword, items.capris]
+        }
+      }
     );
-    //Create an array of those items
-  //Test function
+  //Testing function
   $(function(){
     //declare some variable for the ui
     var textNode = $("#readout-content"),
         inputNode = $("#text-input"),
         buttonNode = $("#hidden-button");
+
+
     //read function
     var read = function(value){
-      var str=value,
-          strArray=str.split(" "),
-          verb = strArray[0],
-          noun = strArray[1] || "room";
-          
-      //check if action exists
-      // if(typeof item[action] === "function"){
-      //   item[action]();
-      // }
-      var discoveredItems = currentRoom.discoveredItems;
-
-      for(var i = 0; i < discoveredItems.length; i++){
-        var item = discoveredItems[i],
-          descriptor = item.descriptor;
-
-        if(noun.toLowerCase() === descriptor.toLowerCase()){
-          if(typeof item[verb] === "function"){
-            //item and verb exist
-            console.log(item[verb]());
-            return;
-          }
-          else{
-            //item exists but verb does not
-            return;
-          }
-        }
-        else{
-          //item does not exist
-        }
+      var str = value,
+          strArray = str.split(" ");
+      if (strArray[0] === "save") {
+        //save state
+        textNode.append('<p>Your progress has been saved in the imperial scrolls of honor... not really, but soon. Consider it hardcore mode!</p>');
+      }else if (strArray[0] === "help"){
+        //textNode.append(helpText);
+        textNode.append('<p>All you have are your senses (<span class="verb_hint">look, listen, feel, smell, taste)</span><br />');
+        textNode.append('Example Commands:<br />');
+        textNode.append('<span class="verb_hint">look</span> <span class="noun_hint">puddle</span> <br />');
+        textNode.append('<span class="verb_hint">listen</span><br />');
+        textNode.append('<em>Enter commands below.</em></p>');
+      }else if (strArray.length >= 1){
+        //have the player process the complete command
+        narration = currentPlayer.contemplate(strArray, currentRoom);
+        textNode.append(narration + '<br />');
       }
-
-      //console.log ('noun: '+noun);
-      //console.log ('verb: '+verb);
-      // var thing = noun[verb]();
-      // if (typeof noun[verb]() === "function"){
-      //   // if item is in the discovered items object
-      //   // if (currentRoom.hasItem(noun) || currentPlayer.hasItem(noun)){
-      //   //   //textNode.append(noun.verb(currentPlayer.perception, currentRoom.ambientLight));
-      //   //   textNode.append('hello');
-      //   // }else{
-      //   //   textNode.append('nope');
-      //   // }
-      //   textNode.append('this');
-      // }else{
-      //   textNode.append('You want to do what with that?');
-      // }
     };
-
-    //console.log('Current Room: Ambient light = ' + currentRoom.ambientLight);
-    //console.log(currentRoom.hasItem(puddle));
-    //textNode.append((currentPlayer.playerName)+"<br>")
-      //.append(currentRoom.look(currentPlayer.perception)+"<br>")
-      //.append(capris.look(currentPlayer.perception, currentRoom.ambientLight));
 
     //Place the cursor in the input
     inputNode.focus();
@@ -108,8 +82,13 @@
     inputNode.on("keyup",function(event){
       if(event.keyCode === 13){
         var value = $(this).val();
-        read(value);
-        this.value = '';
+        if (value !== ''){
+          //run the read funtion
+          read(value);
+          this.value = '';
+        }else{
+          textNode.append('<p>Sometimes the best course of action is to take no action.</p>');
+        }
       }
     });
 });

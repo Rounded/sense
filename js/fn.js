@@ -9,6 +9,10 @@ app.fn = {
     }else{
       return 'A ';
     }
-	}
+	},
+	getParamNames: function(theFunction) {
+    var funStr = theFunction.toString();
+    return funStr.slice(funStr.indexOf('(')+1, funStr.indexOf(')')).match(/([^\s,]+)/g) || '';
+  }
 };
 })(window, $, window.app || {});
