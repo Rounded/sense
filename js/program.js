@@ -71,8 +71,75 @@
         textNode.append('<em>Enter commands below.</em></p>');
       }else if (strArray.length >= 1){
         //have the player process the complete command
-        narration = currentPlayer.contemplate(strArray, currentRoom);
+        narration = comprehend(strArray, currentRoom);
         textNode.append(narration + '<br />');
+        //testFunction = currentPlayer[strArray]();
+        //textNode.append(testFunction + '<br />');
+      }
+    };
+    //comprehend function
+    var comprehend = function(words, currentRoom){
+      console.log(currentPlayer);
+      //identify verbs and items
+      //process words
+      //loop though words finding words looking for functions of the player      
+      var command = [],
+          numWords = words.length,
+          room = currentRoom || {};
+      for (i = 0; i < numWords; i++){
+        var word = words[i];
+        if(typeof currentPlayer[word] === "function"){
+          command.push(currentPlayer[word]);//add function name to array first
+          break;//break out of loop no need to check for more than one verb
+        }
+        else if(i === numWords - 1){
+          // word = 'look';
+          // command.push(this[word]);
+          // break;
+                  //OR
+          return 'Out of boredom or exasperation you proclaim, "' + words.join(" ") +'"';
+        }
+      }
+      //loop through words finding matches in the available items
+      var availableItems = currentPlayer.inventory.concat(currentPlayer.knownItems.currentRoom),
+        numAvailable = availableItems.length;
+      //console.log(currentPlayer);
+      for (var i = 0; i < numAvailable; i++) {
+        for (var j = 0; j < numWords; j++) {
+          if (availableItems[i].descriptor === words[j]) {
+            command.push(availableItems[i]);
+          }
+        }
+      }
+      //console.log(words);
+      //console.log(command);
+
+      //text processed: now we can assume that there is a verb and it is in the first index of the command array
+      var verb = command[0],//the action
+          commandLength = command.length;
+      if (commandLength > 2) {
+        //we must have multiple items. We can have the functions decide what to do with multiple items
+        nouns = [];
+        for (var k = 1; k < commandLength; k++){ //skip to the second item or the first noun
+          nouns.push(command[k]);
+        }
+        //console.log(nouns);
+        return window[verb](nouns, room);
+      }else if(commandLength === 2){
+        //We must have one item
+        noun = command[1];
+        return currentPlayer[verb](noun, room);
+      }else if(commandLength === 1){
+        //console.log();
+        //We must have just a command: meaning everthing else entered by the user is not an available item
+        //Identify current room
+        //Let's check to see if words has something in it
+        if (numWords > 1){
+          return 'There is no ' + noun;
+        }else{
+          console.log(room);
+          return currentPlayer[verb](room, room);
+        }
       }
     };
 

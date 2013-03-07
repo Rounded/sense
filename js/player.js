@@ -6,74 +6,10 @@
     this.knownItems = data.knownItems || {};
     this.playerName = data.playerName || "Anonymous";
     this.perception = data.perception || 0;
-    this.room = {};
   };
 
   app.Player.prototype = {
-    contemplate:function(words, currentRoom){
-      
-      //identify verbs and items
-      //process words
-      //loop though words finding words looking for functions of the player      
-      var command = [],
-          numWords = words.length;
-
-      for (i = 0; i < numWords; i++){
-        var word = words[i];
-        if(typeof this[word] === "function"){
-          command.push(this[word]);//add function name to array first
-          break;//break out of loop no need to check for more than one verb
-        }
-        else if(i === numWords - 1){
-          // word = 'look';
-          // command.push(this[word]);
-          // break;
-                  //OR
-          return 'Out of boredom or exasperation you proclaim, "' + words.join(" ") +'"';
-        }
-      }
-      //loop through words finding matches in the available items
-      var availableItems = this.inventory.concat(this.knownItems.currentRoom),
-        numAvailable = availableItems.length;
-      //console.log(availableItems[0].descriptor+words[0]);
-      for (var i = 0; i < numAvailable; i++) {
-        for (var j = 0; j < numWords; j++) {
-          if (availableItems[i].descriptor === words[j]) {
-            command.push(availableItems[i]);
-          }
-        }
-      }
-      console.log(words);
-      console.log(command);
-
-      //text processed: now we can assume that there is a verb and it is in the first spot
-      var verb = command[0],//the action
-          commandLength = command.length;
-      if (commandLength > 2) {
-        //we must have multiple items. We can have the functions decide what to do with multiple items
-        nouns = [];
-        for (var k = 1; k < commandLength; k++){ //skip to the second item or the first noun
-          nouns.push(command[k]);
-        }
-        console.log(nouns);
-        return verb(nouns);
-      }else if(commandLength === 2){
-        //We must have one item
-        noun = command[1];
-        return verb(noun);
-      }else if(commandLength === 1){
-        //console.log();
-        //We must have just a command: meaning everthing else entered by the user is not an available item
-        //Identify current room
-        //Let's check to see if words has something in it
-        if (numWords > 1){
-          return 'You don\'t see that here';
-        }else{
-          this.room = currentRoom;
-          return verb(currentRoom);
-        }
-      }
-    },
+    
     // hasItem:function(noun){
     //   var availableItems = this.inventory.concat(this.knownItems.currentRoom);
     //   //console.log(availableItems.length);
@@ -110,24 +46,25 @@
       this.inventory.push(theItem);
       return this.inventory;
     },
-    look:function(theItem){
-      console.log(theItem.length);
+    look:function(theItem, room){
       if (!theItem.length){
-      console.log(theItem);
-      //if (this.currentRoom.ambientLight * this.perception > theItem.visual_secret_threshold) {
-        if(typeof theItem.descriptor !== "undefined") {
-          //If the item has a descriptor return the sights or a generic but nice sentence
-          return theItem.sights || 'It looks like ' + app.fn.article(theItem.descriptor) + theItem.descriptor + ', nothing more';
+        //It's important for the look function to focus on one thing
+        //console.log('looking');
+        //console.log(room.ambientLight + ' ' + this.perception + ' ' + theItem.visual_secret_threshold);
+        if (room.ambientLight * this.perception > theItem.visual_secret_threshold) {
+          if(typeof theItem.descriptor !== "undefined") {
+            //If the item has a descriptor return the sights or a generic but nice sentence
+            return theItem.sights || 'It looks like ' + app.fn.article(theItem.descriptor) + theItem.descriptor + ', nothing more';
+          }else{
+            //If the item doesn't have a descriptor... I'm not sure if this will ever happen
+            return theItem.sights || 'You are not quite sure what it is';
+          }
         }else{
-          //If the item doesn't have a descriptor... I'm not sure if this will ever happen
-          return theItem.sights || 'You are not quite sure what it is';
+          return 'Unable to see the details. It\'s too dark in the ' + room.descriptor;
         }
       }else{
         return 'Try as you might, your eyes will not focus on more than one item.';
       }
-      //}else{
-        //return 'Unable to see the details. It\'s too dark in the ' + currentRoom.descriptor;
-      //}
     }
       // var roomAmbientLight = ambientLight || 0;
       // console.log(theItem);
@@ -202,6 +139,5 @@
     //   return this.dropping || 'You toss the ' + this.descriptor + ' to the side';
     //   //put item in parent of character item;
     // }
-    
   };
 })(window, $, window.app || {});
