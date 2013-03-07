@@ -49,8 +49,8 @@
     look:function(theItem, room){
       if (!theItem.length){
         //It's important for the look function to focus on one thing
-        //console.log('looking');
-        //console.log(room.ambientLight + ' ' + this.perception + ' ' + theItem.visual_secret_threshold);
+        console.log(theItem);
+        console.log(room.ambientLight + ' ' + this.perception + ' ' + theItem.visual_secret_threshold);
         if (room.ambientLight * this.perception > theItem.visual_secret_threshold) {
           if(typeof theItem.descriptor !== "undefined") {
             //If the item has a descriptor return the sights or a generic but nice sentence
@@ -65,45 +65,13 @@
       }else{
         return 'Try as you might, your eyes will not focus on more than one item.';
       }
-    }
-      // var roomAmbientLight = ambientLight || 0;
-      // console.log(theItem);
-      // if (typeof (theItem === "")){
-      //   for (var i = 0; i < this.knownItems.length; i++) {
-      //     if (theItem === this.knownItems[i]){
-      //       console.log(roomAmbientLight);
-      //       console.log(this.perception);
-      //       console.log(theItem.visual_secret_threshold);
-      //       console.log(theItem);
-      //       if (roomAmbientLight * this.perception > theItem.visual_secret_threshold) {
-      //         if(typeof theItem.descriptor !== "undefined") {
-      //           //If the item has a descriptor
-      //           return theItem.sights || 'It looks like ' + app.fn.article(theItem.descriptor) + theItem.descriptor + ', nothing more';
-      //           }else{
-      //             return theItem.sights || 'You are not quite sure what it is';
-      //           }
-      //       }else{
-      //           return ' Unable to see the details';
-      //       }
-      //     }else{
-      //       return 'There is no ' + theItem + ' for which to look.<br />';
-      //     }
-      //   }
-      // }else{
-      //   return 'What are you trying to look at?';
-      // }
-        // console.log(currentRoom);
-        // console.log('item ambientLight '+ ambientLight);
-        // console.log('item '+ theItem);
-        // console.log('item vst '+theItem.visual_secret_threshold);
-
-    
+    },
     // touch:function(){
     //   return this.feels || 'It feels like ' + app.fn.article(this.descriptor) + this.descriptor;
     // },
-    // listen:function(){
-    //   return this.sounds || 'The ' + this.descriptor + 'isn\'t emmitting any sounds.';
-    // },
+    listen:function(theItem, room){
+      return theItem.sounds || 'The ' + theItem.descriptor + 'isn\'t emmitting any sounds.';
+    },
     // combine:function(otherItem){
     //   //if ((combineWith.indexOf(otherItem)) !== -1){ //indexOf returns -1 if fail
     //     //create new item that contains the other items and is comprised of the other items

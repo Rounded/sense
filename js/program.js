@@ -8,42 +8,43 @@
       visual_secret_threshold : 10
     });
     items.stone = new app.Item({
-      descriptor : 'stone'
+      descriptor : "stone"
     });
     items.puddle = new app.Item({
-      descriptor : 'puddle',
+      descriptor : "puddle",
       container : true,
-      sights : 'It looks deeper than expected. Perhaps it is hidding something in its depths.',
+      sights : "It looks deeper than expected. Perhaps it is hidding something in its depths.",
       containedItems : [items.flint, items.stone],
-      sounds : 'The only sounds are those of the liquid dripping into it.'
+      sounds : "The only sounds are those of the liquid dripping into it."
     });
     items.capris = new app.Item({
       descriptor : "capris",
       sights : "You Look like an idiot wearing them."
     });
     items.sword = new app.Item({
-      descriptor : 'sword',
-      sights : 'It\'s the most badass thing you have ever laid your eyes on!',
-      sounds : 'Tilting your ear toward it, you can almost hear the whispers and cries of those that fell before it',
-      getting : 'You\'re afraid the blade\'s power will overwhelm you.'
+      descriptor : "sword",
+      sights : "It's the most badass thing you have ever laid your eyes on!",
+      sounds : "Tilting your ear toward it, you can almost hear the whispers and cries of those that fell before it",
+      getting : "You're afraid the blade's power will overwhelm you."
     });
     //Create Room Object passing descriptions and items in
     var currentRoom = new app.Room({
       descriptor : 'cell',
       visual_secret_threshold : 10,
-      ambientLight : 1,
+      ambientLight : 2,
       hiddenItems : [items.flint, items.sword],
-      sights : "It appears to be a holding cell of sorts."
+      sights : "It appears to be a holding cell. There is an iron door on one wall.",
+      sounds : "The sound of liquid dripping slow and evenly can be heard. Judging by the echo the room isn't all that big."
     });
 
     //Create Player
     var currentPlayer = new app.Player(
       {
         playerName : "Bob",
-        perception : 5,
+        perception : 6,
         inventory : [],
         knownItems : {
-          currentRoom : [currentRoom, items.puddle, items.sword, items.capris]
+          currentRoom : [currentRoom, items.puddle, items.capris]
         }
       }
     );
@@ -54,10 +55,9 @@
         inputNode = $("#text-input"),
         buttonNode = $("#hidden-button");
 
-
     //read function
     var read = function(value){
-      var str = value,
+      var str = value.toLowerCase(),
           strArray = str.split(" ");
       if (strArray[0] === "save") {
         //save state
@@ -72,32 +72,36 @@
       }else if (strArray.length >= 1){
         //have the player process the complete command
         narration = comprehend(strArray, currentRoom);
-        textNode.append(narration + '<br />');
+        textNode.append('<p>' + narration + '</p>');
         //testFunction = currentPlayer[strArray]();
         //textNode.append(testFunction + '<br />');
       }
     };
     //comprehend function
     var comprehend = function(words, currentRoom){
-      console.log(currentPlayer);
-      //identify verbs and items
-      //process words
-      //loop though words finding words looking for functions of the player      
+      /*
+      // This function takes the strArray from the user input and processes it into a usable command for the
+      // currentPlayer fuctions. It then calls the function and passes item and room information */
+
+      //loop though words finding words that are functions of the player      
       var command = [],
           numWords = words.length,
           room = currentRoom || {};
       for (i = 0; i < numWords; i++){
         var word = words[i];
         if(typeof currentPlayer[word] === "function"){
-          command.push(currentPlayer[word]);//add function name to array first
+          command.push(word);//add function name to array first
           break;//break out of loop no need to check for more than one verb
+
         }
         else if(i === numWords - 1){
+          //Default to look if no action is found?
+          //Defaulting to movement makes more sense. But we aren't there yet.
           // word = 'look';
           // command.push(this[word]);
           // break;
                   //OR
-          return 'Out of boredom or exasperation you proclaim, "' + words.join(" ") +'"';
+          return 'You can\'t "' + words.join(" ") +'"';
         }
       }
       //loop through words finding matches in the available items
@@ -124,20 +128,24 @@
           nouns.push(command[k]);
         }
         //console.log(nouns);
-        return window[verb](nouns, room);
+        return currentPlayer[verb](nouns, room);
       }else if(commandLength === 2){
         //We must have one item
         noun = command[1];
         return currentPlayer[verb](noun, room);
       }else if(commandLength === 1){
-        //console.log();
         //We must have just a command: meaning everthing else entered by the user is not an available item
-        //Identify current room
-        //Let's check to see if words has something in it
         if (numWords > 1){
-          return 'There is no ' + noun;
+          //If the user tried a random item use it for feedback
+          //take all the rest of the words besides the one that is a function
+          var nonsense = [];
+          for (var l = 0; l < numWords; l++){
+            if (words[l] !== command[0]){
+              nonsense.push(words[l]);
+            }
+          }
+          return 'There is no "' + nonsense.join(" ") +'" for which to ' + verb;
         }else{
-          console.log(room);
           return currentPlayer[verb](room, room);
         }
       }
@@ -154,7 +162,7 @@
           read(value);
           this.value = '';
         }else{
-          textNode.append('<p>Sometimes the best course of action is to take no action.</p>');
+          textNode.append('Sometimes the best course of action is to take no action.');
         }
       }
     });
