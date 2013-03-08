@@ -11,9 +11,9 @@ app.fn = {
   article : function() {
 		var ch = arguments[0].charAt(0);
 		if(ch=='A'||ch=='a'||ch=='E'||ch=='e'||ch=='I'||ch=='i'||ch=='O'||ch=='o'||ch=='U'||ch=='u'){
-      return 'An ';
+      return 'an ';
     }else{
-      return 'A ';
+      return 'a ';
     }
 	},
 	getParamNames: function(theFunction) {
@@ -27,29 +27,28 @@ app.fn = {
 //Item class
 app.Item = function Item(opts){
   var options = opts || {};
+  this.descriptor = options.descriptor;
   this.container = options.container || false;
+  this.containedItems = options.containedItems;
   this.comprisedOf = options.comprisedOf || [];
   this.combineWith = options.combineWith || [];
-  this.discoveredItems = options.discoveredItems || [];
-  //this.ambientLight = options.ambientLight || 0;
-  // the item accesses the ambient light set in the room var and passes it in to the look function
   this.visual_secret_threshold = options.visual_secret_threshold || 1;
-  this.descriptor = options.descriptor;
+  this.getting = options.getting;
   this.sights = options.sights;
   this.sounds = options.sounds;
-  this.getting = options.getting;
-  this.containedItems = options.containedItems;
-  this.dropping = options.dropping;
+  this.taste = options.taste;
+  this.smells = options.smells;
   this.feels = options.feels;
+  this.dropping = options.dropping;
 };
 
 app.Item.prototype = {
-  getDescriptor:function(){
-    if(typeof this.descriptor !== "undefined")
-      return app.fn.article(this.descriptor) + this.descriptor;
-    else
-      return 'It has no name';
-  }
+  // getDescriptor:function(){
+  //   if(typeof this.descriptor !== "undefined")
+  //     return app.fn.article(this.descriptor) + this.descriptor;
+  //   else
+  //     return 'It has no name';
+  // }
 };
 
 })(window, $, window.app || {});
@@ -104,29 +103,35 @@ app.Item.prototype = {
     look:function(theItem, room){
       if (!theItem.length){
         //It's important for the look function to focus on one thing
-        console.log(theItem);
-        console.log(room.ambientLight + ' ' + this.perception + ' ' + theItem.visual_secret_threshold);
+        //console.log(theItem);
+        //console.log(room.ambientLight + ' ' + this.perception + ' ' + theItem.visual_secret_threshold);
         if (room.ambientLight * this.perception > theItem.visual_secret_threshold) {
-          if(typeof theItem.descriptor !== "undefined") {
+          if(typeof theItem.descriptor[0] !== "undefined") {
             //If the item has a descriptor return the sights or a generic but nice sentence
-            return theItem.sights || 'It looks like ' + app.fn.article(theItem.descriptor) + theItem.descriptor + ', nothing more';
+            return theItem.sights || 'It looks like ' + app.fn.article(theItem.descriptor[0]) + theItem.descriptor[0] + ', nothing more';
           }else{
             //If the item doesn't have a descriptor... I'm not sure if this will ever happen
             return theItem.sights || 'You are not quite sure what it is';
           }
         }else{
-          return 'Unable to see the details. It\'s too dark in the ' + room.descriptor;
+          return "The darkness is like an opaque substance that fills the air.";
         }
       }else{
         return 'Try as you might, your eyes will not focus on more than one item.';
       }
     },
-    // touch:function(){
-    //   return this.feels || 'It feels like ' + app.fn.article(this.descriptor) + this.descriptor;
-    // },
     listen:function(theItem, room){
-      return theItem.sounds || 'The ' + theItem.descriptor + 'isn\'t emmitting any sounds.';
+      return theItem.sounds || "The " + theItem.descriptor[0] + " isn't emmitting any sounds.";
     },
+    taste:function(theItem, room){
+      return theItem.taste || "The " + theItem.descriptor[0] + " isn't all that flavorful. Although you wonder where its been.";
+    },
+    smell:function(theItem, room){
+      return theItem.smell || "There is a slight smell but you can't tell if it's from the item your fingers or the inside of your nose.";
+    },
+    touch:function(theItem, room){
+      return theItem.touch || 'It feels like ' + app.fn.article(theItem.descriptor[0]) + theItem.descriptor[0];
+    }
     // combine:function(otherItem){
     //   //if ((combineWith.indexOf(otherItem)) !== -1){ //indexOf returns -1 if fail
     //     //create new item that contains the other items and is comprised of the other items
@@ -182,31 +187,21 @@ app.Room = function Room(opts){
   var options = opts || {}; // Null Object Protection
   this.ambientLight = options.ambientLight || 0;
   this.visual_secret_threshold = options.visual_secret_threshold || 1;
-  this.discoveredItems = options.discoveredItems || [];
   this.hiddenItems = options.hiddenItems || [];
   this.descriptor = options.descriptor;
   this.sights = options.sights;
   this.sounds = options.sounds;
+  this.taste = options.taste;
+  this.smells = options.smells;
+  this.feels = options.feels;
 };
 app.Room.prototype = new app.Item();
 app.Room.prototype = {
-  // //My First Override!
-  // look:function(perception){
-  //   var playerPerception = perception || 0;
-  //     //console.log('room'+this.ambientLight);
-  //     //console.log('room'+this.playerPerception);
-  //     //console.log('room'+this.visual_secret_threshold);
-  //   if (this.ambientLight * playerPerception > this.visual_secret_threshold) {
-  //     return this.sights || "It\'s Just four walls, a floor, and ceiling";
-  //   } else {
-  //     return 'It\'s black as night';
-  //   }
-  // },
   //Move items from hidden to discovered
-  // revealItem:function(hiddenItem){
-  //   this.discoveredItems.push(hiddenItem);
-  //   return this.discoveredItems;
-  // },
+  revealItem:function(hiddenItem){
+    this.discoveredItems.push(hiddenItem);
+    return this.discoveredItems;
+  }
 
   // hasItem:function(whichItem){
   //   //loop through discoveredItems
@@ -230,33 +225,39 @@ app.Room.prototype = {
       visual_secret_threshold : 10
     });
     items.stone = new app.Item({
-      descriptor : "stone"
+      descriptor : ["stone", "flagstone", "rock"]
     });
     items.puddle = new app.Item({
       descriptor : "puddle",
       container : true,
-      sights : "It looks deeper than expected. Perhaps it is hidding something in its depths.",
       containedItems : [items.flint, items.stone],
-      sounds : "The only sounds are those of the liquid dripping into it."
+      sights : "It looks deeper than expected. Perhaps it is hidding something in its depths.",
+      sounds : "The only sounds are those of the liquid dripping into it.",
+      taste : "You immediately regret not smelling it first as it appears to be keroseen!"
     });
     items.capris = new app.Item({
-      descriptor : "capris",
-      sights : "You Look like an idiot wearing them."
+      descriptor : ["capris", "pants"],
+      sights : "You Look like an idiot wearing them.",
+      sounds : "They make a quite swishing sound when you walk (stealth -1).",
+      tastes : "You probably don't want to do that.",
+      smells : "You probably don't want to do that.",
+      feels : "They feel light and thin (agility +2)."
     });
     items.sword = new app.Item({
       descriptor : "sword",
+      getting : "You're afraid the blade's power will overwhelm you.",
       sights : "It's the most badass thing you have ever laid your eyes on!",
-      sounds : "Tilting your ear toward it, you can almost hear the whispers and cries of those that fell before it",
-      getting : "You're afraid the blade's power will overwhelm you."
+      sounds : "Tilting your ear toward it, you can almost hear the whispers and cries of those that fell before it"
     });
     //Create Room Object passing descriptions and items in
     var currentRoom = new app.Room({
       descriptor : 'cell',
       visual_secret_threshold : 10,
-      ambientLight : 2,
+      ambientLight : 1,
       hiddenItems : [items.flint, items.sword],
       sights : "It appears to be a holding cell. There is an iron door on one wall.",
-      sounds : "The sound of liquid dripping slow and evenly can be heard. Judging by the echo the room isn't all that big."
+      sounds : "drip… drip… drip… The dripping noise is slow and even. It sounds as though droplets are falling into a small puddle nearby, close enough to reach out and touch.",
+      feels : "It's cool where you are(ambient_temp). You feel solid but uneven flagstone beneath your feet."
     });
 
     //Create Player
@@ -264,9 +265,9 @@ app.Room.prototype = {
       {
         playerName : "Bob",
         perception : 6,
-        inventory : [],
+        inventory : [items.capris],
         knownItems : {
-          currentRoom : [currentRoom, items.puddle, items.capris]
+          currentRoom : [currentRoom, items.puddle, items.stone]
         }
       }
     );
@@ -326,19 +327,48 @@ app.Room.prototype = {
           return 'You can\'t "' + words.join(" ") +'"';
         }
       }
-      //loop through words finding matches in the available items
       var availableItems = currentPlayer.inventory.concat(currentPlayer.knownItems.currentRoom),
-        numAvailable = availableItems.length;
-      //console.log(currentPlayer);
-      for (var i = 0; i < numAvailable; i++) {
-        for (var j = 0; j < numWords; j++) {
-          if (availableItems[i].descriptor === words[j]) {
-            command.push(availableItems[i]);
+          numAvailable = availableItems.length;
+      // loop through available items getting all variations on the descriptors
+      // and push it to an array of availableItemsNames
+
+//I have an item i need to check if the the word is found in the items descriptor array and then add the item to the command array
+      // var availableItemsNames = [];
+      // for (var i = 0; i < numAvailable; i++){
+      //   if (typeof availableItems[i].descriptor === 'object'){
+      //     var numSynonyms = availableItems[i].descriptor.length;
+      //     console.log(i);
+      //     for (j = 0; j < numSynonyms; j++){
+      //       var itemName = availableItems[i].descriptor[j];
+      //       availableItemsNames.push();
+      //     }
+      //   }else{
+      //     availableItemsNames.push(availableItems[i].descriptor);
+      //   }
+      // }
+      // Loop through all the names of the available items and check it against all the words entered by the user
+      var numItems = availableItems.length;
+      console.log(availableItems);
+      for (var k = 0; k < numItems; k++) {
+        for (var l = 0; l < numWords; l++) {
+          if (typeof availableItems[k].descriptor === 'object') {
+            //Check the descriptor array against the words
+            var numNames = availableItems[k].descriptor.length;
+            for (var m = 0; m < numNames; m++) {
+              if (availableItems[k].descriptor[m] === words[l]) {
+                command.push(availableItems[k]);
+              }
+            }
+          }else{
+            //check the descriptor against the words
+            if (availableItems[k].descriptor === words[l]) {
+              command.push(availableItems[k]);
+            }
           }
         }
       }
-      //console.log(words);
-      //console.log(command);
+      console.log(words);
+      console.log(command);
 
       //text processed: now we can assume that there is a verb and it is in the first index of the command array
       var verb = command[0],//the action
@@ -346,8 +376,8 @@ app.Room.prototype = {
       if (commandLength > 2) {
         //we must have multiple items. We can have the functions decide what to do with multiple items
         nouns = [];
-        for (var k = 1; k < commandLength; k++){ //skip to the second item or the first noun
-          nouns.push(command[k]);
+        for (var i = 1; i < commandLength; i++){ //skip to the second item or the first noun
+          nouns.push(command[i]);
         }
         //console.log(nouns);
         return currentPlayer[verb](nouns, room);
@@ -361,9 +391,9 @@ app.Room.prototype = {
           //If the user tried a random item use it for feedback
           //take all the rest of the words besides the one that is a function
           var nonsense = [];
-          for (var l = 0; l < numWords; l++){
-            if (words[l] !== command[0]){
-              nonsense.push(words[l]);
+          for (var j = 0; j < numWords; j++){
+            if (words[j] !== command[0]){
+              nonsense.push(words[j]);
             }
           }
           return 'There is no "' + nonsense.join(" ") +'" for which to ' + verb;
@@ -384,7 +414,7 @@ app.Room.prototype = {
           read(value);
           this.value = '';
         }else{
-          textNode.append('Sometimes the best course of action is to take no action.');
+          textNode.append('Sometimes the best course of action is to take no action, but that is not the case here.');
         }
       }
     });

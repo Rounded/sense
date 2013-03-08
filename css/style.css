@@ -47,6 +47,9 @@ body {
 .noun_hint {
   color: #144c6e;
 }
+p {
+  padding-right: 10%;
+}
 h1 {
   font-family: 'Venera' serif;
   font-size: 1.4em;

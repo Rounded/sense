@@ -49,29 +49,35 @@
     look:function(theItem, room){
       if (!theItem.length){
         //It's important for the look function to focus on one thing
-        console.log(theItem);
-        console.log(room.ambientLight + ' ' + this.perception + ' ' + theItem.visual_secret_threshold);
+        //console.log(theItem);
+        //console.log(room.ambientLight + ' ' + this.perception + ' ' + theItem.visual_secret_threshold);
         if (room.ambientLight * this.perception > theItem.visual_secret_threshold) {
-          if(typeof theItem.descriptor !== "undefined") {
+          if(typeof theItem.descriptor[0] !== "undefined") {
             //If the item has a descriptor return the sights or a generic but nice sentence
-            return theItem.sights || 'It looks like ' + app.fn.article(theItem.descriptor) + theItem.descriptor + ', nothing more';
+            return theItem.sights || 'It looks like ' + app.fn.article(theItem.descriptor[0]) + theItem.descriptor[0] + ', nothing more';
           }else{
             //If the item doesn't have a descriptor... I'm not sure if this will ever happen
             return theItem.sights || 'You are not quite sure what it is';
           }
         }else{
-          return 'Unable to see the details. It\'s too dark in the ' + room.descriptor;
+          return "The darkness is like an opaque substance that fills the air.";
         }
       }else{
         return 'Try as you might, your eyes will not focus on more than one item.';
       }
     },
-    // touch:function(){
-    //   return this.feels || 'It feels like ' + app.fn.article(this.descriptor) + this.descriptor;
-    // },
     listen:function(theItem, room){
-      return theItem.sounds || 'The ' + theItem.descriptor + 'isn\'t emmitting any sounds.';
+      return theItem.sounds || "The " + theItem.descriptor[0] + " isn't emmitting any sounds.";
     },
+    taste:function(theItem, room){
+      return theItem.taste || "The " + theItem.descriptor[0] + " isn't all that flavorful. Although you wonder where its been.";
+    },
+    smell:function(theItem, room){
+      return theItem.smell || "There is a slight smell but you can't tell if it's from the item your fingers or the inside of your nose.";
+    },
+    touch:function(theItem, room){
+      return theItem.touch || 'It feels like ' + app.fn.article(theItem.descriptor[0]) + theItem.descriptor[0];
+    }
     // combine:function(otherItem){
     //   //if ((combineWith.indexOf(otherItem)) !== -1){ //indexOf returns -1 if fail
     //     //create new item that contains the other items and is comprised of the other items
