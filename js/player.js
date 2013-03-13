@@ -9,7 +9,6 @@
   };
 
   app.Player.prototype = {
-    
     // hasItem:function(noun){
     //   var availableItems = this.inventory.concat(this.knownItems.currentRoom);
     //   //console.log(availableItems.length);
@@ -47,37 +46,60 @@
       return this.inventory;
     },
     look:function(theItem, room){
-      if (!theItem.length){
-        //It's important for the look function to focus on one thing
-        //console.log(theItem);
-        //console.log(room.ambientLight + ' ' + this.perception + ' ' + theItem.visual_secret_threshold);
-        if (room.ambientLight * this.perception > theItem.visual_secret_threshold) {
-          if(typeof theItem.descriptor[0] !== "undefined") {
-            //If the item has a descriptor return the sights or a generic but nice sentence
-            return theItem.sights || 'It looks like ' + app.fn.article(theItem.descriptor[0]) + theItem.descriptor[0] + ', nothing more';
+      //console.log(theItem);
+      //console.log(this.perception +' * ' + room.ambientLight + ' >=? ' + theItem.visualSecretThreshold);
+      //general vision check
+      if (this.perception * room.ambientLight > 0){
+        console.log(theItem);
+        //does theItem contain multiple items?
+        console.log(theItem.length);
+        if (theItem.length < 2){
+          //unwrap the item array
+          var item = theItem[0];
+          // Visual secret check
+          console.log(item);
+          if ((item.visualSecret) && (this.perception * room.ambientLight >= item.visualSecretThreshold)) {
+            var secretSight = item.sights.concat(' ' + item.visualSecret);
+            return secretSight + item.listContainedItems();
           }else{
-            //If the item doesn't have a descriptor... I'm not sure if this will ever happen
-            return theItem.sights || 'You are not quite sure what it is';
+              return item.sights + item.listContainedItems()  || 'It looks like ' + app.fn.article(item.descriptor[0]) + item.descriptor[0] + ', nothing more.';
           }
         }else{
-          return "The darkness is like an opaque substance that fills the air.";
+          return 'Try as you might, your eyes will not focus on more than one item.';
         }
       }else{
-        return 'Try as you might, your eyes will not focus on more than one item.';
+        return "The inky blackness of your surroundings makes it impossible to see.";
       }
     },
     listen:function(theItem, room){
-      return theItem.sounds || "The " + theItem.descriptor[0] + " isn't emmitting any sounds.";
+      if(typeof theItem !== 'string'){
+        return theItem.sounds || "The " + theItem.descriptor[0] + " isn't emmitting any sounds.";
+      }else{
+        return 'There is no "' + theItem +'" for which to listen to.';
+      }
     },
     taste:function(theItem, room){
-      return theItem.taste || "The " + theItem.descriptor[0] + " isn't all that flavorful. Although you wonder where its been.";
+      if(typeof theItem !== 'string'){
+        return theItem.taste;
+      }else{
+        return 'There is no "' + theItem +'" for which to taste';
+      }
     },
     smell:function(theItem, room){
-      return theItem.smell || "There is a slight smell but you can't tell if it's from the item your fingers or the inside of your nose.";
+      if(typeof theItem !== 'string'){
+        return theItem.smell || "There is a slight smell but you can't tell if it's from the item your fingers or the inside of your nose.";
+      }else{
+        return 'There is no "' + theItem +'" for which to smell';
+      }
     },
     touch:function(theItem, room){
-      return theItem.touch || 'It feels like ' + app.fn.article(theItem.descriptor[0]) + theItem.descriptor[0];
-    }
+      //Check to see if it's not just a string of random stuff
+      if(typeof theItem !== 'string'){
+        return theItem.touch || 'It feels like ' + app.fn.article(theItem.descriptor[0]) + theItem.descriptor[0];
+      }else{
+        return 'There is no "' + theItem +'" for which to touch';
+      }
+    },
     // combine:function(otherItem){
     //   //if ((combineWith.indexOf(otherItem)) !== -1){ //indexOf returns -1 if fail
     //     //create new item that contains the other items and is comprised of the other items
@@ -91,27 +113,51 @@
     // take:function(){
     //   return this.getting || 'Try as you might you cannot take the ' + this.descriptor;
     // },
-    // //search function is a take function
-    // search:function(){
-    //   console.log(this.containedItems);
-    //   if (this.container){
-    //     if (this.containedItems){
-    //       var foundItems = 'You find:\n';
-    //       for (var i = 0; i < this.containedItems.length; i++) {
-    //         foundItems += app.fn.article(this.descriptor) + this.containedItems[i].descriptor +'\n';
-    //       }
-    //       return foundItems;
-    //     }else{
-    //       return 'You grope around in the ' + this.descriptor + ', but find nothing. Dissapoint.';
-    //     }
-    //   }else{
-    //     return 'The ' + this.descriptor + ' isn\'t a container.';
-    //   }
-    // },
+    //search function is a take function
+    take:function(theItems){
+      var numTaking = theitems.length;
+      for (var i = 0; i < numTaking; i++){
+        if (theItems[i] === this.knownItems[i]){
+          //do stuff
 
-    // drop:function(){
-    //   return this.dropping || 'You toss the ' + this.descriptor + ' to the side';
-    //   //put item in parent of character item;
-    // }
+        }else{
+          //The item is not a knownItem
+        }
+      }
+    },
+    search:function(theItem, room){
+      //This function will add the items found to the players knownItems array for the currentRoom
+      console.log(this.knownItems);
+      if (theItem.container){
+        if (theItem.containedItems.length>0){
+          var foundItems = 'In the ' + theItem.descriptor[0] + ' You find:<br />';
+          for (var i = 0; i < theItem.containedItems.length; i++) {
+            foundItems += app.fn.article(theItem.descriptor[0]) + theItem.containedItems[i].descriptor[0] +'<br />';
+          }
+          var movingItems = theItem.containedItems.splice(0);
+          this.knownItems.currentRoom.push(movingItems);
+          console.log(this.knownItems);
+          return foundItems;
+        }else{
+          return 'You grope around in the ' + theItem.descriptor[0] + ', but find nothing. Dissapoint.';
+        }
+      }else{
+        return 'The ' + theItem.descriptor[0] + ' isn\'t a container.';
+      }
+    },
+
+    drop:function(theItems, room){
+      var drops = theItems.length;
+      for (i = 0; i < drops; i++){
+        var movingItems = this.inventory.splice(0);
+        room.push(movingItems);
+      }
+
+      return this.dropping || 'You toss the ' + this.descriptor + ' to the side';
+      //put item in parent of character item;
+    },
+    put:function(theItems, room){
+      //
+    }
   };
 })(window, $, window.app || {});

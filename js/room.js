@@ -3,8 +3,9 @@
 app.Room = function Room(opts){
   var options = opts || {}; // Null Object Protection
   this.ambientLight = options.ambientLight || 0;
-  this.visual_secret_threshold = options.visual_secret_threshold || 1;
   this.hiddenItems = options.hiddenItems || [];
+  this.container = options.container || false;
+  this.containedItems = options.containedItems || [];
   this.descriptor = options.descriptor;
   this.sights = options.sights;
   this.sounds = options.sounds;
@@ -18,8 +19,24 @@ app.Room.prototype = {
   revealItem:function(hiddenItem){
     this.discoveredItems.push(hiddenItem);
     return this.discoveredItems;
+  },
+  listContainedItems:function(){
+    if (this.container){
+      //get contained items
+      var numContained = this.containedItems.length,
+          list = [];
+      if (numContained !== 0) {
+        for (var i = 0; i < numContained; i++ ){
+          list.push(this.containedItems[i].descriptor[0]);
+        }
+        return "<p>In the room there is:</p>" + list.join('<br />');
+      }else{
+        return "The container is empty :(";
+      }
+    }else{
+      return null;
+    }
   }
-
   // hasItem:function(whichItem){
   //   //loop through discoveredItems
   //   for (var i = 0; i < this.discoveredItems.length; i++) {

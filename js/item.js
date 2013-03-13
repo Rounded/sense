@@ -8,9 +8,10 @@ app.Item = function Item(opts){
   this.containedItems = options.containedItems;
   this.comprisedOf = options.comprisedOf || [];
   this.combineWith = options.combineWith || [];
-  this.visual_secret_threshold = options.visual_secret_threshold || 1;
+  this.visualSecretThreshold = options.visualSecretThreshold || 1;
   this.getting = options.getting;
   this.sights = options.sights;
+  this.visualSecret = options.visualSecret;
   this.sounds = options.sounds;
   this.taste = options.taste;
   this.smells = options.smells;
@@ -19,6 +20,23 @@ app.Item = function Item(opts){
 };
 
 app.Item.prototype = {
+  listContainedItems:function(){
+    if (this.container){
+      //get contained items
+      var numContained = this.containedItems.length,
+          list = [];
+      if (numContained !== 0) {
+        for (var i = 0; i < numContained; i++ ){
+          list.push(this.containedItems[i].descriptor[0]);
+        }
+        return "<p>The item contains:</p>" + list.join('<br />');
+      }else{
+        return "The container is empty :(";
+      }
+    }else{
+      return null;
+    }
+  }
   // getDescriptor:function(){
   //   if(typeof this.descriptor !== "undefined")
   //     return app.fn.article(this.descriptor) + this.descriptor;
