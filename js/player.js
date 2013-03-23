@@ -3,12 +3,24 @@
   app.Player = function Player(playerData){
     var data = playerData || {};
     this.inventory = data.inventory || [];
-    this.knownItems = data.knownItems || {};
+    this.knownItems = data.knownItems || [];
     this.playerName = data.playerName || "Anonymous";
-    this.perception = data.perception || 0;
   };
 
   app.Player.prototype = {
+    survey:function(){
+      //get contained items
+      var numContained = this.knownItems.playerLocation.length,
+          list = [];
+      if (numContained !== 0) {
+        for (var i = 0; i < numContained; i++ ){
+          list.push(this.knownItems.playerLocation[i].descriptor[0]);
+        }
+        return "<p>You are aware of:</p>" + list.join('<br />');
+      }else{
+        return "You aren't aware of anything.";
+      }
+    },
     // hasItem:function(noun){
     //   var availableItems = this.inventory.concat(this.knownItems.currentRoom);
     //   //console.log(availableItems.length);
@@ -46,24 +58,25 @@
       return this.inventory;
     },
     look:function(theItem, room){
-      //console.log(theItem);
-      //console.log(this.perception +' * ' + room.ambientLight + ' >=? ' + theItem.visualSecretThreshold);
-      //general vision check
-      if (this.perception * room.ambientLight > 0){
-        console.log(theItem);
-        //does theItem contain multiple items?
-        console.log(theItem.length);
+      // general vision check
+      if (room.ambientLight > 0){
+        // does theItem contain multiple items?
         if (theItem.length < 2){
-          //unwrap the item array
-          var item = theItem[0];
+          // unwrap the item array
+          var item = theItem[0],
+              theSights = theItem[0].sights;
           // Visual secret check
-          console.log(item);
-          if ((item.visualSecret) && (this.perception * room.ambientLight >= item.visualSecretThreshold)) {
-            var secretSight = item.sights.concat(' ' + item.visualSecret);
-            return secretSight + item.listContainedItems();
-          }else{
-              return item.sights + item.listContainedItems()  || 'It looks like ' + app.fn.article(item.descriptor[0]) + item.descriptor[0] + ', nothing more.';
+          // If you can see clearly you notice things and get to use them
+          if ((item.visualSecret) && (room.ambientLight >= item.visualSecretThreshold)) {
+            var secretSight = item.visualSecret,
+                numHidden = room.hiddenItems.length;
+            // push hidden items to the known items if there are any
+            for (var i = 0; i < numHidden; i++){
+              this.knownItems.playerLocation.push(room.hiddenItems[i]);
+            }
+            theSights = theSights.concat(" " + secretSight);
           }
+          return theSights || 'It looks like ' + app.fn.article(item.descriptor[0]) + item.descriptor[0] + ', nothing more.';
         }else{
           return 'Try as you might, your eyes will not focus on more than one item.';
         }
@@ -72,11 +85,8 @@
       }
     },
     listen:function(theItem, room){
-      if(typeof theItem !== 'string'){
-        return theItem.sounds || "The " + theItem.descriptor[0] + " isn't emmitting any sounds.";
-      }else{
-        return 'There is no "' + theItem +'" for which to listen to.';
-      }
+      console.log(theItem[0]);
+      return theItem[0].sounds || "The " + theItem[0].descriptor[0] + " isn't emmitting any sounds.";
     },
     taste:function(theItem, room){
       if(typeof theItem !== 'string'){
@@ -114,17 +124,17 @@
     //   return this.getting || 'Try as you might you cannot take the ' + this.descriptor;
     // },
     //search function is a take function
-    take:function(theItems){
-      var numTaking = theitems.length;
-      for (var i = 0; i < numTaking; i++){
-        if (theItems[i] === this.knownItems[i]){
-          //do stuff
+    // take:function(theItems){
+    //   var numTaking = theitems.length;
+    //   for (var i = 0; i < numTaking; i++){
+    //     if (theItems[i] === this.knownItems[i]){
+    //       //do stuff
 
-        }else{
-          //The item is not a knownItem
-        }
-      }
-    },
+    //     }else{
+    //       //The item is not a knownItem
+    //     }
+    //   }
+    // },
     search:function(theItem, room){
       //This function will add the items found to the players knownItems array for the currentRoom
       console.log(this.knownItems);

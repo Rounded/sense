@@ -75,12 +75,24 @@ app.Item.prototype = {
   app.Player = function Player(playerData){
     var data = playerData || {};
     this.inventory = data.inventory || [];
-    this.knownItems = data.knownItems || {};
+    this.knownItems = data.knownItems || [];
     this.playerName = data.playerName || "Anonymous";
-    this.perception = data.perception || 0;
   };
 
   app.Player.prototype = {
+    survey:function(){
+      //get contained items
+      var numContained = this.knownItems.playerLocation.length,
+          list = [];
+      if (numContained !== 0) {
+        for (var i = 0; i < numContained; i++ ){
+          list.push(this.knownItems.playerLocation[i].descriptor[0]);
+        }
+        return "<p>You are aware of:</p>" + list.join('<br />');
+      }else{
+        return "You aren't aware of anything.";
+      }
+    },
     // hasItem:function(noun){
     //   var availableItems = this.inventory.concat(this.knownItems.currentRoom);
     //   //console.log(availableItems.length);
@@ -118,24 +130,25 @@ app.Item.prototype = {
       return this.inventory;
     },
     look:function(theItem, room){
-      //console.log(theItem);
-      //console.log(this.perception +' * ' + room.ambientLight + ' >=? ' + theItem.visualSecretThreshold);
-      //general vision check
-      if (this.perception * room.ambientLight > 0){
-        console.log(theItem);
-        //does theItem contain multiple items?
-        console.log(theItem.length);
+      // general vision check
+      if (room.ambientLight > 0){
+        // does theItem contain multiple items?
         if (theItem.length < 2){
-          //unwrap the item array
-          var item = theItem[0];
+          // unwrap the item array
+          var item = theItem[0],
+              theSights = theItem[0].sights;
           // Visual secret check
-          console.log(item);
-          if ((item.visualSecret) && (this.perception * room.ambientLight >= item.visualSecretThreshold)) {
-            var secretSight = item.sights.concat(' ' + item.visualSecret);
-            return secretSight + item.listContainedItems();
-          }else{
-              return item.sights + item.listContainedItems()  || 'It looks like ' + app.fn.article(item.descriptor[0]) + item.descriptor[0] + ', nothing more.';
+          // If you can see clearly you notice things and get to use them
+          if ((item.visualSecret) && (room.ambientLight >= item.visualSecretThreshold)) {
+            var secretSight = item.visualSecret,
+                numHidden = room.hiddenItems.length;
+            // push hidden items to the known items if there are any
+            for (var i = 0; i < numHidden; i++){
+              this.knownItems.playerLocation.push(room.hiddenItems[i]);
+            }
+            theSights = theSights.concat(" " + secretSight);
           }
+          return theSights || 'It looks like ' + app.fn.article(item.descriptor[0]) + item.descriptor[0] + ', nothing more.';
         }else{
           return 'Try as you might, your eyes will not focus on more than one item.';
         }
@@ -144,11 +157,8 @@ app.Item.prototype = {
       }
     },
     listen:function(theItem, room){
-      if(typeof theItem !== 'string'){
-        return theItem.sounds || "The " + theItem.descriptor[0] + " isn't emmitting any sounds.";
-      }else{
-        return 'There is no "' + theItem +'" for which to listen to.';
-      }
+      console.log(theItem[0]);
+      return theItem[0].sounds || "The " + theItem[0].descriptor[0] + " isn't emmitting any sounds.";
     },
     taste:function(theItem, room){
       if(typeof theItem !== 'string'){
@@ -186,17 +196,17 @@ app.Item.prototype = {
     //   return this.getting || 'Try as you might you cannot take the ' + this.descriptor;
     // },
     //search function is a take function
-    take:function(theItems){
-      var numTaking = theitems.length;
-      for (var i = 0; i < numTaking; i++){
-        if (theItems[i] === this.knownItems[i]){
-          //do stuff
+    // take:function(theItems){
+    //   var numTaking = theitems.length;
+    //   for (var i = 0; i < numTaking; i++){
+    //     if (theItems[i] === this.knownItems[i]){
+    //       //do stuff
 
-        }else{
-          //The item is not a knownItem
-        }
-      }
-    },
+    //     }else{
+    //       //The item is not a knownItem
+    //     }
+    //   }
+    // },
     search:function(theItem, room){
       //This function will add the items found to the players knownItems array for the currentRoom
       console.log(this.knownItems);
@@ -251,9 +261,11 @@ app.Room = function Room(opts){
   var options = opts || {}; // Null Object Protection
   this.ambientLight = options.ambientLight || 0;
   this.hiddenItems = options.hiddenItems || [];
-  this.container = options.container || false;
+  this.container = options.container || true;
   this.containedItems = options.containedItems || [];
   this.descriptor = options.descriptor;
+  this.visualSecret = options.visualSecret;
+  this.visualSecretThreshold = options.visualSecretThreshold;
   this.sights = options.sights;
   this.sounds = options.sounds;
   this.taste = options.taste;
@@ -315,7 +327,7 @@ app.Room.prototype = {
       sights : "It ripples lightly with every drop.",
       visualSecret : "As you look closer you can see that there is some depth to it!",
       sounds : "The only sounds are those of the liquid dripping into it.",
-      taste : "You immediately regret not smelling it first as it appears to be keroseen!"
+      taste : "It tastes like keroseen!"
     });
     items.capris = new app.Item({
       descriptor : ["capris", "pants"],
@@ -333,12 +345,13 @@ app.Room.prototype = {
     });
     //Create Room Object passing descriptions and items in
     var currentRoom = new app.Room({
-      descriptor : ['cell'],
-      ambientLight : 3,
-      hiddenItems : [items.sword],
-      container : true,
-      containedItems : [items.puddle, items.stone],
-      sights : "It appears to be a holding cell. There is an iron door on one wall.",
+      descriptor : ["cell"],
+      ambientLight : 1, //
+      hiddenItems : [items.sword,items.puddle], // These items will be reavealed and added to the players known items array
+      containedItems : [], // If the default desc for the room mentions the items put them here. that way the player will be able to interact with them
+      visualSecretThreshold : 1,
+      visualSecret : "There is a sword lying on the floor.",
+      sights : "It appears to be a holding cell.",
       sounds : "drip… drip… drip… The dripping noise is slow and even. It sounds as though droplets are falling into a small puddle nearby, close enough to reach out and touch.",
       feels : "It's cool where you are(ambient_temp). You feel solid but uneven flagstone beneath your feet."
     });
@@ -349,9 +362,8 @@ app.Room.prototype = {
         playerName : "You",
         inventory : [items.capris],
         knownItems : {
-          currentRoom : []
-        },
-        perception : 2
+          playerLocation : []
+        }
       }
     );
   //Testing function
@@ -383,31 +395,13 @@ app.Room.prototype = {
         //textNode.append(testFunction + '<br />');
       }
     };
-    var getVerb = function(words){
-      //
-    };
-    var getNouns = function(words, currentRoom){
-
-    };
     //comprehend function
     var comprehend = function(words, currentRoom){
       /*
       // This function takes the strArray from the user input and processes it into a usable command for the
       // currentPlayer fuctions. It then calls the function and passes item and room information.
-      // Also It needs a rework badly:
-      three parts:
-        the first two set values for the third to use and return things accordingly
-        check to see if any of the words is a function of the user
-         if it is set the word to the verb
-        check to see if any of the words matches a name of the items available to the user
-          if they are push them to a nouns array
-
-        check values and return the function call
-        
-        
-       */
-      //// Part 1
-
+      */
+      //// Set the verb and modify the words array
       var verb = '',
           nouns = [];
           room = currentRoom || {},
@@ -421,19 +415,21 @@ app.Room.prototype = {
           break;
         }
       }
-      //// Part 2
-      var availableItems = currentPlayer.inventory.concat(currentPlayer.knownItems.currentRoom, currentRoom.containedItems),
+      //// push to the nouns array
+      console.log(currentPlayer.knownItems);
+      var availableItems = currentPlayer.inventory.concat(currentPlayer.knownItems.playerLocation),
           numItems = availableItems.length;
+      console.log(currentPlayer.knownItems.playerLocation);
       if (numWords > 1){
         //loop the words and check it against the available items
-        for (var k = 0; k < numWords; k++) {
-          for (var l = 0; l < numItems; l++) {
+        for (var j = 0; j < numWords; j++) {
+          for (var k = 0; k < numItems; k++) {
             //Check the descriptor array against the words
-            var numNames = availableItems[l].descriptor.length;
-            for (var m = 0; m < numNames; m++) {
+            var numNames = availableItems[k].descriptor.length;
+            for (var l = 0; l < numNames; l++) {
               //Check to see if any of the words match an available item;
-              if (availableItems[l].descriptor[m] === words[k]) {
-                nouns.push(availableItems[l]);
+              if (availableItems[k].descriptor[l] === words[j]) {
+                nouns.push(availableItems[k]);
               }
             }
           }
@@ -441,7 +437,7 @@ app.Room.prototype = {
       }else{
         nouns.push(room);
       }
-      //// Part 3
+      //// call the function with the verb and nouns
       if (verb){
         var numNouns = nouns.length;
         if (numNouns > 0){
@@ -452,78 +448,6 @@ app.Room.prototype = {
       }else{
         return "Although it may be your wish to " + words.join(" ") + ". What would be the point?";
       }
-
-
-      //loop though words finding words that are functions of the player      
-      /*var command = [],
-          numWords = words.length,
-          room = currentRoom || {};
-      for (i = 0; i < numWords; i++){
-        var word = words[i];
-        if(typeof currentPlayer[word] === "function"){
-          command.push(word);//add function name to array first
-          break;//break out of loop no need to check for more than one verb
-
-        }
-        else if(i === numWords - 1){
-          //Default to look if no action is found?
-          //Defaulting to movement makes more sense. But we aren't there yet.
-          // word = 'look';
-          // command.push(this[word]);
-          // break;
-                  //OR
-          return 'You can\'t "' + words.join(" ") +'"';
-        }
-      }
-      //Available items are inventory, discovered items and items laying around in the current room
-      var availableItems = currentPlayer.inventory.concat(currentPlayer.knownItems.currentRoom, currentRoom.containedItems);
-      // Loop through all the items and if neccessary all the names of the item and check it against all the words entered by the user
-      var numItems = availableItems.length;
-      if (numWords > 1){
-        //loop the words and check it against the available items
-        for (var k = 0; k < numWords; k++) {
-          for (var l = 0; l < numItems; l++) {
-            //Check the descriptor array against the words
-            var numNames = availableItems[l].descriptor.length;
-            for (var m = 0; m < numNames; m++) {
-              //Check to see if any of the words match an available item;
-              if (availableItems[l].descriptor[m] === words[k]) {
-                command.push(availableItems[l]);
-              }
-            }
-          }
-        }
-      }else{
-        //push the currentRoom as the second item in the array this sets up the the array to perform the funciton on the room by default
-        command.push(room);
-      }
-      if (command.length < 2){
-        return "There is no " + words.slice(1).join(" ") + " for which to " + command[0];
-      }
-      //Do this before we push anything else to the command array
-
-      //text processed: now we can assume that there is a verb and at least one valid noun YAY!!!
-      //below are rules for constructing the command
-      //If there isn't a noun at all we assume the character wants to examine surroundings
-      var verb = command[0],//the action
-          nouns = [],
-          commandLength = command.length;
-      if (commandLength > 1) {
-        //we could have multiple items. We can have the functions decide what to do with multiple items
-        nouns = [];
-        for (var i = 1; i < commandLength; i++){ //skip to the second item or the first noun
-          nouns.push(command[i]);
-        }
-        //the item needs to be unwrapped for the look function and probably others
-        if (nouns.length === 1){
-          return currentPlayer[verb](nouns[0], room);
-        }else{
-          return currentPlayer[verb](nouns, room);
-        }
-      }else if(commandLength === 1){
-        //We must have just a command
-        return currentPlayer[verb](room, room);
-      }*/
     };
 
     //Place the cursor in the input
