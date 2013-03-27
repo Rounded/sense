@@ -109,7 +109,7 @@
       console.log(currentPlayer.knownItems);
       var availableItems = currentPlayer.inventory.concat(currentPlayer.knownItems.playerLocation),
           numItems = availableItems.length;
-      console.log(currentPlayer.knownItems.playerLocation);
+      //console.log(currentPlayer.knownItems.playerLocation);
       if (numWords > 1){
         //loop the words and check it against the available items
         for (var j = 0; j < numWords; j++) {

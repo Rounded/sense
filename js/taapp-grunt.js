@@ -133,6 +133,7 @@ app.Item.prototype = {
       // general vision check
       if (room.ambientLight > 0){
         // does theItem contain multiple items?
+        //console.log(theItem);
         if (theItem.length < 2){
           // unwrap the item array
           var item = theItem[0],
@@ -143,6 +144,7 @@ app.Item.prototype = {
             var secretSight = item.visualSecret,
                 numHidden = room.hiddenItems.length;
             // push hidden items to the known items if there are any
+            // *this might be better to happen in the users brain instead of the code
             for (var i = 0; i < numHidden; i++){
               this.knownItems.playerLocation.push(room.hiddenItems[i]);
             }
@@ -157,7 +159,7 @@ app.Item.prototype = {
       }
     },
     listen:function(theItem, room){
-      console.log(theItem[0]);
+      //console.log(theItem[0]);
       return theItem[0].sounds || "The " + theItem[0].descriptor[0] + " isn't emmitting any sounds.";
     },
     taste:function(theItem, room){
@@ -419,7 +421,7 @@ app.Room.prototype = {
       console.log(currentPlayer.knownItems);
       var availableItems = currentPlayer.inventory.concat(currentPlayer.knownItems.playerLocation),
           numItems = availableItems.length;
-      console.log(currentPlayer.knownItems.playerLocation);
+      //console.log(currentPlayer.knownItems.playerLocation);
       if (numWords > 1){
         //loop the words and check it against the available items
         for (var j = 0; j < numWords; j++) {
