@@ -1,6 +1,6 @@
 (function(window,$,app){
     //Create Items
-    //TODO: Fix this -> The order the items are created are important
+    //TODO: Fix this maybe -> The order the items are created are important
     //items first then containers followed by room and player
     var items = {};
     items.flint = new app.Item({
@@ -10,8 +10,9 @@
       descriptor : ["stone", "flagstone", "rock"]
     });
     items.puddle = new app.Item({
+      isStationary : true,
       descriptor : ["puddle"],
-      container : true,
+      isContainer : true,
       containedItems : [items.flint, items.stone],
       visualSecretThreshold : 6,
       sights : "It ripples lightly with every drop.",
@@ -21,11 +22,11 @@
     });
     items.capris = new app.Item({
       descriptor : ["capris", "pants"],
-      sights : "You Look like an idiot wearing them.",
+      sights : "Hemmed right above the calve, they'll make anybody wearing them look like an idiot.",
       sounds : "They make a quite swishing sound when you walk (stealth -1).",
       tastes : "You probably don't want to do that.",
       smells : "You probably don't want to do that.",
-      feels : "They feel light and thin (agility +2)."
+      touch : "They feel light and agile (agility +2)."
     });
     items.sword = new app.Item({
       descriptor : ["sword"],
@@ -33,27 +34,26 @@
       sights : "It's the most badass thing you have ever laid your eyes on!",
       sounds : "Tilting your ear toward it, you can almost hear the whispers and cries of those that fell before it"
     });
+
+
     //Create Room Object passing descriptions and items in
     var currentRoom = new app.Room({
-      descriptor : ["cell"],
-      ambientLight : 1, //
-      hiddenItems : [items.sword,items.puddle], // These items will be reavealed and added to the players known items array
-      containedItems : [], // If the default desc for the room mentions the items put them here. that way the player will be able to interact with them
+      descriptor : ["room","cell","area","here"],
+      ambientLight : 1,
+      containedItems : [items.puddle, items.sword],
       visualSecretThreshold : 1,
-      visualSecret : "There is a sword lying on the floor.",
-      sights : "It appears to be a holding cell.",
+      visualSecret : "There is some writing on the wall. Scratched into the stone, it reads. MacGyver was here.",
+      sights : "You are in a small 10'x10' room with roughly hewn stone walls joined together flawlessly without mortar. The floor is of the same material but larger and smoother tiles. There are no obvious exits except for a large iron door.",
       sounds : "drip… drip… drip… The dripping noise is slow and even. It sounds as though droplets are falling into a small puddle nearby, close enough to reach out and touch.",
-      feels : "It's cool where you are(ambient_temp). You feel solid but uneven flagstone beneath your feet."
+      touch : "It's cool where you are. You feel solid and cold stone beneath your feet.",
+      smells : "You sniff the air and are assaulted with the smell of decay and hint of lamp oil."
     });
 
     //Create Player
     var currentPlayer = new app.Player(
       {
         playerName : "You",
-        inventory : [items.capris],
-        knownItems : {
-          playerLocation : []
-        }
+        inventory : [items.capris]
       }
     );
   //Testing function
@@ -77,6 +77,9 @@
         textNode.append('<span class="verb_hint">look</span> <span class="noun_hint">puddle</span> <br />');
         textNode.append('<span class="verb_hint">listen</span><br />');
         textNode.append('<em>Enter commands below.</em></p>');
+      }else if (strArray[0] === "inv" || "inventory"){
+        narration = currentPlayer.inventory(currentPlayer);
+        textNode.append('<p>' + narration + '</p>');
       }else if (strArray.length >= 1){
         //have the player process the complete command
         narration = comprehend(strArray, currentRoom);
@@ -89,7 +92,7 @@
     var comprehend = function(words, currentRoom){
       /*
       // This function takes the strArray from the user input and processes it into a usable command for the
-      // currentPlayer fuctions. It then calls the function and passes item and room information.
+      // currentPlayer functions. It then calls the function and passes item and room information.
       */
       //// Set the verb and modify the words array
       var verb = '',
@@ -106,10 +109,10 @@
         }
       }
       //// push to the nouns array
-      console.log(currentPlayer.knownItems);
-      var availableItems = currentPlayer.inventory.concat(currentPlayer.knownItems.playerLocation),
+      //console.log(currentPlayer.knownItems);
+      var availableItems = currentPlayer.inventory.concat(currentRoom.containedItems).concat(currentRoom),
           numItems = availableItems.length;
-      console.log(currentPlayer.knownItems.playerLocation);
+      //console.log(currentPlayer.knownItems.playerLocation);
       if (numWords > 1){
         //loop the words and check it against the available items
         for (var j = 0; j < numWords; j++) {
@@ -118,6 +121,7 @@
             var numNames = availableItems[k].descriptor.length;
             for (var l = 0; l < numNames; l++) {
               //Check to see if any of the words match an available item;
+              //TODO: Need to handle duplicate items here
               if (availableItems[k].descriptor[l] === words[j]) {
                 nouns.push(availableItems[k]);
               }

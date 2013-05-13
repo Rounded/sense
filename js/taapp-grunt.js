@@ -27,40 +27,41 @@ app.fn = {
 //Item class
 app.Item = function Item(opts){
   var options = opts || {};
+  this.isStationary = options.isStationary || false;
   this.descriptor = options.descriptor;
-  this.container = options.container || false;
+  this.isContainer = options.isContainer || false;
   this.containedItems = options.containedItems;
   this.comprisedOf = options.comprisedOf || [];
   this.combineWith = options.combineWith || [];
-  this.visualSecretThreshold = options.visualSecretThreshold || 1;
   this.getting = options.getting;
   this.sights = options.sights;
   this.visualSecret = options.visualSecret;
+  this.visualSecretThreshold = options.visualSecretThreshold || 1;
   this.sounds = options.sounds;
   this.taste = options.taste;
   this.smells = options.smells;
-  this.feels = options.feels;
+  this.touch = options.touch;
   this.dropping = options.dropping;
 };
 
 app.Item.prototype = {
-  listContainedItems:function(){
-    if (this.container){
-      //get contained items
-      var numContained = this.containedItems.length,
-          list = [];
-      if (numContained !== 0) {
-        for (var i = 0; i < numContained; i++ ){
-          list.push(this.containedItems[i].descriptor[0]);
-        }
-        return "<p>The item contains:</p>" + list.join('<br />');
-      }else{
-        return "The container is empty :(";
-      }
-    }else{
-      return null;
-    }
-  }
+  // listContainedItems:function(){
+  //   if (this.isContainer){
+  //     //get contained items
+  //     var numContained = this.containedItems.length,
+  //         list = [];
+  //     if (numContained !== 0) {
+  //       for (var i = 0; i < numContained; i++ ){
+  //         list.push(this.containedItems[i].descriptor[0]);
+  //       }
+  //       return "<p>The item contains:</p>" + list.join('<br />');
+  //     }else{
+  //       return "The container is empty :(";
+  //     }
+  //   }else{
+  //     return null;
+  //   }
+  // }
   // getDescriptor:function(){
   //   if(typeof this.descriptor !== "undefined")
   //     return app.fn.article(this.descriptor) + this.descriptor;
@@ -75,59 +76,18 @@ app.Item.prototype = {
   app.Player = function Player(playerData){
     var data = playerData || {};
     this.inventory = data.inventory || [];
-    this.knownItems = data.knownItems || [];
+    this.discoveredItems = data.discoveredItems || [];
     this.playerName = data.playerName || "Anonymous";
   };
 
   app.Player.prototype = {
-    survey:function(){
-      //get contained items
-      var numContained = this.knownItems.playerLocation.length,
-          list = [];
-      if (numContained !== 0) {
-        for (var i = 0; i < numContained; i++ ){
-          list.push(this.knownItems.playerLocation[i].descriptor[0]);
+    hasItem:function(whichItem){
+      //loop through discoveredItems
+      for (var i = 0; i < this.inventory.length; i++) {
+        if (whichItem === this.inventory[i]) {
+          return true;
         }
-        return "<p>You are aware of:</p>" + list.join('<br />');
-      }else{
-        return "You aren't aware of anything.";
       }
-    },
-    // hasItem:function(noun){
-    //   var availableItems = this.inventory.concat(this.knownItems.currentRoom);
-    //   //console.log(availableItems.length);
-    //   if (availableItems.length > 0) {
-    //     for (var i = 0; i < availableItems.length; i++) {
-    //       if (noun === availableItems[i].descriptor) {
-    //         return availableItems[i];
-    //       }
-    //     }
-    //   }else{
-    //     return false;
-    //   }
-    // },
-    // hasAction:function(verb){
-    //   if(typeof this[verb] === "function"){
-    //     //verb exists
-    //     //roomArg = currentRoom[(getParamNames(theFunction)[0])] || '',
-    //     //narration = currentPlayer[verb](roomArg, noun);
-    //     //textNode.append(narration+'<br />');
-
-    //     //playerArg = this[(app.fn.getParamNames(this.hasAction)[0])] || '';
-    //     //itemArg = currentRoom[(getParamNames(theFunction)[2])] || '';
-    //     //Append Success
-    //     //console.log(currentPlayer[verb](roomArg, noun));
-    //     return true;
-
-    //   }
-    //   else{
-    //     return false;
-    //     //textNode.append('You can\'t ' + verb + ' the ' + noun +'<br />');
-    //   }
-    // },
-    addItem:function(theItem){
-      this.inventory.push(theItem);
-      return this.inventory;
     },
     look:function(theItem, room){
       // general vision check
@@ -137,15 +97,10 @@ app.Item.prototype = {
           // unwrap the item array
           var item = theItem[0],
               theSights = theItem[0].sights;
-          // Visual secret check
-          // If you can see clearly you notice things and get to use them
+          // Visual secret check for items
+          // If you can see clearly you will get more hints
           if ((item.visualSecret) && (room.ambientLight >= item.visualSecretThreshold)) {
-            var secretSight = item.visualSecret,
-                numHidden = room.hiddenItems.length;
-            // push hidden items to the known items if there are any
-            for (var i = 0; i < numHidden; i++){
-              this.knownItems.playerLocation.push(room.hiddenItems[i]);
-            }
+            var secretSight = item.visualSecret;
             theSights = theSights.concat(" " + secretSight);
           }
           return theSights || 'It looks like ' + app.fn.article(item.descriptor[0]) + item.descriptor[0] + ', nothing more.';
@@ -157,29 +112,32 @@ app.Item.prototype = {
       }
     },
     listen:function(theItem, room){
-      console.log(theItem[0]);
-      return theItem[0].sounds || "The " + theItem[0].descriptor[0] + " isn't emmitting any sounds.";
+      if (theItem.length < 2){
+        return theItem[0].sounds || "The " + theItem[0].descriptor[0] + " isn't emmitting any sounds.";
+      }else{
+        return 'Try to focus on one item at a time.';
+      }
     },
     taste:function(theItem, room){
-      if(typeof theItem !== 'string'){
-        return theItem.taste;
+      console.log(theItem[0]);
+      if (theItem.length < 2){
+        return theItem[0].taste || "No taste really but you suddenly wonder where the " + theItem[0].descriptor[0] + " has been.";
       }else{
-        return 'There is no "' + theItem +'" for which to taste';
+        return 'You must like tasting things. Try just one thing at a time.';
       }
     },
     smell:function(theItem, room){
-      if(typeof theItem !== 'string'){
-        return theItem.smell || "There is a slight smell but you can't tell if it's from the item your fingers or the inside of your nose.";
+      if (theItem.length < 2){
+        return theItem[0].smell || "There is a slight smell but you can't tell if it's from the item your fingers or the inside of your nose.";
       }else{
-        return 'There is no "' + theItem +'" for which to smell';
+        return 'It helps if you smell one thing at a time';
       }
     },
     touch:function(theItem, room){
-      //Check to see if it's not just a string of random stuff
-      if(typeof theItem !== 'string'){
-        return theItem.touch || 'It feels like ' + app.fn.article(theItem.descriptor[0]) + theItem.descriptor[0];
+      if (theItem.length < 2){
+        return theItem[0].touch || 'It feels like ' + app.fn.article(theItem[0].descriptor[0]) + theItem[0].descriptor[0];
       }else{
-        return 'There is no "' + theItem +'" for which to touch';
+        return 'Try touching one item at a time';
       }
     },
     // combine:function(otherItem){
@@ -207,36 +165,78 @@ app.Item.prototype = {
     //     }
     //   }
     // },
-    search:function(theItem, room){
-      //This function will add the items found to the players knownItems array for the currentRoom
-      console.log(this.knownItems);
-      if (theItem.container){
-        if (theItem.containedItems.length>0){
-          var foundItems = 'In the ' + theItem.descriptor[0] + ' You find:<br />';
-          for (var i = 0; i < theItem.containedItems.length; i++) {
-            foundItems += app.fn.article(theItem.descriptor[0]) + theItem.containedItems[i].descriptor[0] +'<br />';
+    inventory:function(player){
+          var numItems = player.inventory.length;
+          if (numItems>0){
+            var foundItems = 'In the ' + player.playerName + ' You find:<br />';
+            for (var i = 0; i < numItems; i++) {
+              foundItems +=  player.inventory[i].descriptor[0] +'<br />';
+            }
+            return foundItems;
+          }else{
+            return 'You grope around in the ' + player.playerName + ', but find nothing. Dissapoint.';
           }
-          var movingItems = theItem.containedItems.splice(0);
-          this.knownItems.currentRoom.push(movingItems);
-          console.log(this.knownItems);
-          return foundItems;
+        
+    },
+    search:function(theItem, room){
+      if (theItem.length < 2){
+        var item = theItem[0];
+        if (item.isContainer){
+          var numItems = item.containedItems.length;
+          if (numItems>0){
+            var foundItems = 'In the ' + item.descriptor[0] + ' You find:<br />';
+            for (var i = 0; i < numItems; i++) {
+              foundItems +=  item.containedItems[i].descriptor[0] +'<br />';
+            }
+            return foundItems;
+          }else{
+            return 'You grope around in the ' + item.descriptor[0] + ', but find nothing. Dissapoint.';
+          }
         }else{
-          return 'You grope around in the ' + theItem.descriptor[0] + ', but find nothing. Dissapoint.';
+          return 'The ' + item.descriptor[0] + ' isn\'t a container.';
         }
       }else{
-        return 'The ' + theItem.descriptor[0] + ' isn\'t a container.';
+        return 'Try searching one item at a time';
       }
     },
-
-    drop:function(theItems, room){
-      var drops = theItems.length;
-      for (i = 0; i < drops; i++){
-        var movingItems = this.inventory.splice(0);
-        room.push(movingItems);
+    take:function(theItem, room){
+      if (theItem.length < 2){
+        var item = theItem[0];
+        if (!item.isStationary){
+          if (!this.hasItem(item)){
+            var taken = '',
+                index = room.containedItems.indexOf(item);
+            room.containedItems.splice(index, 1);
+            this.inventory.push(item);
+            taken += item.descriptor[0];
+            console.log(this.inventory);
+            console.log(room.containedItems);
+            return item.getting || 'You take the: <br>' + taken;
+            
+          }else{
+            return 'You already have the ' + item.descriptor[0];
+          }
+        }else{
+          return 'You cannot take the ' + item.descriptor[0];
+        }
+      }else{
+        return 'Try taking one item at a time';
       }
-
-      return this.dropping || 'You toss the ' + this.descriptor + ' to the side';
-      //put item in parent of character item;
+    },
+    drop:function(theItem, room){
+      var numItems = theItem.length;
+      var dropped = '';
+      for(var i = 0; i< numItems; i++){
+        var item = theItem[i],
+            index = this.inventory.indexOf(item);
+        this.inventory.splice(index, 1);
+        room.containedItems.push(item);
+        dropped += item.descriptor[0] + '<br>';
+        console.log(this.inventory);
+        console.log(room.containedItems);
+      }
+      return 'You drop the: <br>' + dropped;
+      //Return user feedback
     },
     put:function(theItems, room){
       //
@@ -260,40 +260,30 @@ app.Item.prototype = {
 app.Room = function Room(opts){
   var options = opts || {}; // Null Object Protection
   this.ambientLight = options.ambientLight || 0;
-  this.hiddenItems = options.hiddenItems || [];
-  this.container = options.container || true;
+  this.isContainer = options.isContainer || true;
   this.containedItems = options.containedItems || [];
   this.descriptor = options.descriptor;
+  this.sights = options.sights //+ this.listContainedItems();
   this.visualSecret = options.visualSecret;
-  this.visualSecretThreshold = options.visualSecretThreshold;
-  this.sights = options.sights;
+  this.visualSecretThreshold = options.visualSecretThreshold || 1;
   this.sounds = options.sounds;
   this.taste = options.taste;
   this.smells = options.smells;
-  this.feels = options.feels;
+  this.touch = options.touch;
 };
 app.Room.prototype = new app.Item();
 app.Room.prototype = {
-  //Move items from hidden to discovered
-  revealItem:function(hiddenItem){
-    this.discoveredItems.push(hiddenItem);
-    return this.discoveredItems;
-  },
   listContainedItems:function(){
-    if (this.container){
-      //get contained items
-      var numContained = this.containedItems.length,
-          list = [];
-      if (numContained !== 0) {
-        for (var i = 0; i < numContained; i++ ){
-          list.push(this.containedItems[i].descriptor[0]);
-        }
-        return "<p>In the room there is:</p>" + list.join('<br />');
-      }else{
-        return "The container is empty :(";
+    //get contained items
+    var numContained = this.containedItems.length,
+        list = [];
+    if (numContained !== 0) {
+      for (var i = 0; i < numContained; i++ ){
+        list.push(this.containedItems[i].descriptor[0]);
       }
+      return "<p>In the room there is:<br />" + list.join('<br />') + '</p>';
     }else{
-      return null;
+      return "There is nothing  :(";
     }
   }
   // hasItem:function(whichItem){
@@ -310,7 +300,7 @@ app.Room.prototype = {
 })(window, $, window.app || {});
 (function(window,$,app){
     //Create Items
-    //TODO: Fix this -> The order the items are created are important
+    //TODO: Fix this maybe -> The order the items are created are important
     //items first then containers followed by room and player
     var items = {};
     items.flint = new app.Item({
@@ -320,8 +310,9 @@ app.Room.prototype = {
       descriptor : ["stone", "flagstone", "rock"]
     });
     items.puddle = new app.Item({
+      isStationary : true,
       descriptor : ["puddle"],
-      container : true,
+      isContainer : true,
       containedItems : [items.flint, items.stone],
       visualSecretThreshold : 6,
       sights : "It ripples lightly with every drop.",
@@ -331,11 +322,11 @@ app.Room.prototype = {
     });
     items.capris = new app.Item({
       descriptor : ["capris", "pants"],
-      sights : "You Look like an idiot wearing them.",
+      sights : "Hemmed right above the calve, they'll make anybody wearing them look like an idiot.",
       sounds : "They make a quite swishing sound when you walk (stealth -1).",
       tastes : "You probably don't want to do that.",
       smells : "You probably don't want to do that.",
-      feels : "They feel light and thin (agility +2)."
+      touch : "They feel light and agile (agility +2)."
     });
     items.sword = new app.Item({
       descriptor : ["sword"],
@@ -343,27 +334,26 @@ app.Room.prototype = {
       sights : "It's the most badass thing you have ever laid your eyes on!",
       sounds : "Tilting your ear toward it, you can almost hear the whispers and cries of those that fell before it"
     });
+
+
     //Create Room Object passing descriptions and items in
     var currentRoom = new app.Room({
-      descriptor : ["cell"],
-      ambientLight : 1, //
-      hiddenItems : [items.sword,items.puddle], // These items will be reavealed and added to the players known items array
-      containedItems : [], // If the default desc for the room mentions the items put them here. that way the player will be able to interact with them
+      descriptor : ["room","cell","area","here"],
+      ambientLight : 1,
+      containedItems : [items.puddle, items.sword],
       visualSecretThreshold : 1,
-      visualSecret : "There is a sword lying on the floor.",
-      sights : "It appears to be a holding cell.",
+      visualSecret : "There is some writing on the wall. Scratched into the stone, it reads. MacGyver was here.",
+      sights : "You are in a small 10'x10' room with roughly hewn stone walls joined together flawlessly without mortar. The floor is of the same material but larger and smoother tiles. There are no obvious exits except for a large iron door.",
       sounds : "drip… drip… drip… The dripping noise is slow and even. It sounds as though droplets are falling into a small puddle nearby, close enough to reach out and touch.",
-      feels : "It's cool where you are(ambient_temp). You feel solid but uneven flagstone beneath your feet."
+      touch : "It's cool where you are. You feel solid and cold stone beneath your feet.",
+      smells : "You sniff the air and are assaulted with the smell of decay and hint of lamp oil."
     });
 
     //Create Player
     var currentPlayer = new app.Player(
       {
         playerName : "You",
-        inventory : [items.capris],
-        knownItems : {
-          playerLocation : []
-        }
+        inventory : [items.capris]
       }
     );
   //Testing function
@@ -387,6 +377,9 @@ app.Room.prototype = {
         textNode.append('<span class="verb_hint">look</span> <span class="noun_hint">puddle</span> <br />');
         textNode.append('<span class="verb_hint">listen</span><br />');
         textNode.append('<em>Enter commands below.</em></p>');
+      }else if (strArray[0] === "inv" || "inventory"){
+        narration = currentPlayer.inventory(currentPlayer);
+        textNode.append('<p>' + narration + '</p>');
       }else if (strArray.length >= 1){
         //have the player process the complete command
         narration = comprehend(strArray, currentRoom);
@@ -399,7 +392,7 @@ app.Room.prototype = {
     var comprehend = function(words, currentRoom){
       /*
       // This function takes the strArray from the user input and processes it into a usable command for the
-      // currentPlayer fuctions. It then calls the function and passes item and room information.
+      // currentPlayer functions. It then calls the function and passes item and room information.
       */
       //// Set the verb and modify the words array
       var verb = '',
@@ -416,10 +409,10 @@ app.Room.prototype = {
         }
       }
       //// push to the nouns array
-      console.log(currentPlayer.knownItems);
-      var availableItems = currentPlayer.inventory.concat(currentPlayer.knownItems.playerLocation),
+      //console.log(currentPlayer.knownItems);
+      var availableItems = currentPlayer.inventory.concat(currentRoom.containedItems).concat(currentRoom),
           numItems = availableItems.length;
-      console.log(currentPlayer.knownItems.playerLocation);
+      //console.log(currentPlayer.knownItems.playerLocation);
       if (numWords > 1){
         //loop the words and check it against the available items
         for (var j = 0; j < numWords; j++) {
@@ -428,6 +421,7 @@ app.Room.prototype = {
             var numNames = availableItems[k].descriptor.length;
             for (var l = 0; l < numNames; l++) {
               //Check to see if any of the words match an available item;
+              //TODO: Need to handle duplicate items here
               if (availableItems[k].descriptor[l] === words[j]) {
                 nouns.push(availableItems[k]);
               }

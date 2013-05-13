@@ -3,59 +3,18 @@
   app.Player = function Player(playerData){
     var data = playerData || {};
     this.inventory = data.inventory || [];
-    this.knownItems = data.knownItems || [];
+    this.discoveredItems = data.discoveredItems || [];
     this.playerName = data.playerName || "Anonymous";
   };
 
   app.Player.prototype = {
-    survey:function(){
-      //get contained items
-      var numContained = this.knownItems.playerLocation.length,
-          list = [];
-      if (numContained !== 0) {
-        for (var i = 0; i < numContained; i++ ){
-          list.push(this.knownItems.playerLocation[i].descriptor[0]);
+    hasItem:function(whichItem){
+      //loop through discoveredItems
+      for (var i = 0; i < this.inventory.length; i++) {
+        if (whichItem === this.inventory[i]) {
+          return true;
         }
-        return "<p>You are aware of:</p>" + list.join('<br />');
-      }else{
-        return "You aren't aware of anything.";
       }
-    },
-    // hasItem:function(noun){
-    //   var availableItems = this.inventory.concat(this.knownItems.currentRoom);
-    //   //console.log(availableItems.length);
-    //   if (availableItems.length > 0) {
-    //     for (var i = 0; i < availableItems.length; i++) {
-    //       if (noun === availableItems[i].descriptor) {
-    //         return availableItems[i];
-    //       }
-    //     }
-    //   }else{
-    //     return false;
-    //   }
-    // },
-    // hasAction:function(verb){
-    //   if(typeof this[verb] === "function"){
-    //     //verb exists
-    //     //roomArg = currentRoom[(getParamNames(theFunction)[0])] || '',
-    //     //narration = currentPlayer[verb](roomArg, noun);
-    //     //textNode.append(narration+'<br />');
-
-    //     //playerArg = this[(app.fn.getParamNames(this.hasAction)[0])] || '';
-    //     //itemArg = currentRoom[(getParamNames(theFunction)[2])] || '';
-    //     //Append Success
-    //     //console.log(currentPlayer[verb](roomArg, noun));
-    //     return true;
-
-    //   }
-    //   else{
-    //     return false;
-    //     //textNode.append('You can\'t ' + verb + ' the ' + noun +'<br />');
-    //   }
-    // },
-    addItem:function(theItem){
-      this.inventory.push(theItem);
-      return this.inventory;
     },
     look:function(theItem, room){
       // general vision check
@@ -65,15 +24,10 @@
           // unwrap the item array
           var item = theItem[0],
               theSights = theItem[0].sights;
-          // Visual secret check
-          // If you can see clearly you notice things and get to use them
+          // Visual secret check for items
+          // If you can see clearly you will get more hints
           if ((item.visualSecret) && (room.ambientLight >= item.visualSecretThreshold)) {
-            var secretSight = item.visualSecret,
-                numHidden = room.hiddenItems.length;
-            // push hidden items to the known items if there are any
-            for (var i = 0; i < numHidden; i++){
-              this.knownItems.playerLocation.push(room.hiddenItems[i]);
-            }
+            var secretSight = item.visualSecret;
             theSights = theSights.concat(" " + secretSight);
           }
           return theSights || 'It looks like ' + app.fn.article(item.descriptor[0]) + item.descriptor[0] + ', nothing more.';
@@ -85,29 +39,32 @@
       }
     },
     listen:function(theItem, room){
-      console.log(theItem[0]);
-      return theItem[0].sounds || "The " + theItem[0].descriptor[0] + " isn't emmitting any sounds.";
+      if (theItem.length < 2){
+        return theItem[0].sounds || "The " + theItem[0].descriptor[0] + " isn't emmitting any sounds.";
+      }else{
+        return 'Try to focus on one item at a time.';
+      }
     },
     taste:function(theItem, room){
-      if(typeof theItem !== 'string'){
-        return theItem.taste;
+      console.log(theItem[0]);
+      if (theItem.length < 2){
+        return theItem[0].taste || "No taste really but you suddenly wonder where the " + theItem[0].descriptor[0] + " has been.";
       }else{
-        return 'There is no "' + theItem +'" for which to taste';
+        return 'You must like tasting things. Try just one thing at a time.';
       }
     },
     smell:function(theItem, room){
-      if(typeof theItem !== 'string'){
-        return theItem.smell || "There is a slight smell but you can't tell if it's from the item your fingers or the inside of your nose.";
+      if (theItem.length < 2){
+        return theItem[0].smell || "There is a slight smell but you can't tell if it's from the item your fingers or the inside of your nose.";
       }else{
-        return 'There is no "' + theItem +'" for which to smell';
+        return 'It helps if you smell one thing at a time';
       }
     },
     touch:function(theItem, room){
-      //Check to see if it's not just a string of random stuff
-      if(typeof theItem !== 'string'){
-        return theItem.touch || 'It feels like ' + app.fn.article(theItem.descriptor[0]) + theItem.descriptor[0];
+      if (theItem.length < 2){
+        return theItem[0].touch || 'It feels like ' + app.fn.article(theItem[0].descriptor[0]) + theItem[0].descriptor[0];
       }else{
-        return 'There is no "' + theItem +'" for which to touch';
+        return 'Try touching one item at a time';
       }
     },
     // combine:function(otherItem){
@@ -135,36 +92,78 @@
     //     }
     //   }
     // },
-    search:function(theItem, room){
-      //This function will add the items found to the players knownItems array for the currentRoom
-      console.log(this.knownItems);
-      if (theItem.container){
-        if (theItem.containedItems.length>0){
-          var foundItems = 'In the ' + theItem.descriptor[0] + ' You find:<br />';
-          for (var i = 0; i < theItem.containedItems.length; i++) {
-            foundItems += app.fn.article(theItem.descriptor[0]) + theItem.containedItems[i].descriptor[0] +'<br />';
+    inventory:function(player){
+          var numItems = player.inventory.length;
+          if (numItems>0){
+            var foundItems = 'In the ' + player.playerName + ' You find:<br />';
+            for (var i = 0; i < numItems; i++) {
+              foundItems +=  player.inventory[i].descriptor[0] +'<br />';
+            }
+            return foundItems;
+          }else{
+            return 'You grope around in the ' + player.playerName + ', but find nothing. Dissapoint.';
           }
-          var movingItems = theItem.containedItems.splice(0);
-          this.knownItems.currentRoom.push(movingItems);
-          console.log(this.knownItems);
-          return foundItems;
+        
+    },
+    search:function(theItem, room){
+      if (theItem.length < 2){
+        var item = theItem[0];
+        if (item.isContainer){
+          var numItems = item.containedItems.length;
+          if (numItems>0){
+            var foundItems = 'In the ' + item.descriptor[0] + ' You find:<br />';
+            for (var i = 0; i < numItems; i++) {
+              foundItems +=  item.containedItems[i].descriptor[0] +'<br />';
+            }
+            return foundItems;
+          }else{
+            return 'You grope around in the ' + item.descriptor[0] + ', but find nothing. Dissapoint.';
+          }
         }else{
-          return 'You grope around in the ' + theItem.descriptor[0] + ', but find nothing. Dissapoint.';
+          return 'The ' + item.descriptor[0] + ' isn\'t a container.';
         }
       }else{
-        return 'The ' + theItem.descriptor[0] + ' isn\'t a container.';
+        return 'Try searching one item at a time';
       }
     },
-
-    drop:function(theItems, room){
-      var drops = theItems.length;
-      for (i = 0; i < drops; i++){
-        var movingItems = this.inventory.splice(0);
-        room.push(movingItems);
+    take:function(theItem, room){
+      if (theItem.length < 2){
+        var item = theItem[0];
+        if (!item.isStationary){
+          if (!this.hasItem(item)){
+            var taken = '',
+                index = room.containedItems.indexOf(item);
+            room.containedItems.splice(index, 1);
+            this.inventory.push(item);
+            taken += item.descriptor[0];
+            console.log(this.inventory);
+            console.log(room.containedItems);
+            return item.getting || 'You take the: <br>' + taken;
+            
+          }else{
+            return 'You already have the ' + item.descriptor[0];
+          }
+        }else{
+          return 'You cannot take the ' + item.descriptor[0];
+        }
+      }else{
+        return 'Try taking one item at a time';
       }
-
-      return this.dropping || 'You toss the ' + this.descriptor + ' to the side';
-      //put item in parent of character item;
+    },
+    drop:function(theItem, room){
+      var numItems = theItem.length;
+      var dropped = '';
+      for(var i = 0; i< numItems; i++){
+        var item = theItem[i],
+            index = this.inventory.indexOf(item);
+        this.inventory.splice(index, 1);
+        room.containedItems.push(item);
+        dropped += item.descriptor[0] + '<br>';
+        console.log(this.inventory);
+        console.log(room.containedItems);
+      }
+      return 'You drop the: <br>' + dropped;
+      //Return user feedback
     },
     put:function(theItems, room){
       //
