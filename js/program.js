@@ -15,14 +15,15 @@
       isContainer : true,
       containedItems : [items.flint, items.stone],
       visualSecretThreshold : 6,
-      sights : "It ripples lightly with every drop.",
+      sightDescription : "It ripples lightly with every drop.",
       visualSecret : "As you look closer you can see that there is some depth to it!",
       sounds : "The only sounds are those of the liquid dripping into it.",
-      taste : "It tastes like keroseen!"
+      tastes : "It tastes like keroseen!",
+      smells : "The puddle smells like something you would remove paint with."
     });
     items.capris = new app.Item({
       descriptor : ["capris", "pants"],
-      sights : "Hemmed right above the calve, they'll make anybody wearing them look like an idiot.",
+      sightDescription : "Hemmed right above the calve, they'll make anybody wearing them look like an idiot.",
       sounds : "They make a quite swishing sound when you walk (stealth -1).",
       tastes : "You probably don't want to do that.",
       smells : "You probably don't want to do that.",
@@ -31,24 +32,22 @@
     items.sword = new app.Item({
       descriptor : ["sword"],
       getting : "You're afraid the blade's power will overwhelm you.",
-      sights : "It's the most badass thing you have ever laid your eyes on!",
+      sightDescription : "It's the most badass thing you have ever laid your eyes on!",
       sounds : "Tilting your ear toward it, you can almost hear the whispers and cries of those that fell before it"
     });
-
-
     //Create Room Object passing descriptions and items in
     var currentRoom = new app.Room({
       descriptor : ["room","cell","area","here"],
       ambientLight : 1,
       containedItems : [items.puddle, items.sword],
       visualSecretThreshold : 1,
-      visualSecret : "There is some writing on the wall. Scratched into the stone, it reads. MacGyver was here.",
-      sights : "You are in a small 10'x10' room with roughly hewn stone walls joined together flawlessly without mortar. The floor is of the same material but larger and smoother tiles. There are no obvious exits except for a large iron door.",
+      visualSecret : "There is some writing on the wall. Scratched into the stone, it reads. RDA was here.",
+      sightDescription : "You are in a small 10'x10' room with roughly hewn stone walls joined together flawlessly without mortar. The floor is of the same material but larger and smoother tiles. There are no obvious exits except for a large iron door.",
       sounds : "drip… drip… drip… The dripping noise is slow and even. It sounds as though droplets are falling into a small puddle nearby, close enough to reach out and touch.",
       touch : "It's cool where you are. You feel solid and cold stone beneath your feet.",
       smells : "You sniff the air and are assaulted with the smell of decay and hint of lamp oil."
     });
-
+    console.log(currentRoom)
     //Create Player
     var currentPlayer = new app.Player(
       {
@@ -77,9 +76,9 @@
         textNode.append('<span class="verb_hint">look</span> <span class="noun_hint">puddle</span> <br />');
         textNode.append('<span class="verb_hint">listen</span><br />');
         textNode.append('<em>Enter commands below.</em></p>');
-      }else if (strArray[0] === "inv" || "inventory"){
-        narration = currentPlayer.inventory(currentPlayer);
-        textNode.append('<p>' + narration + '</p>');
+      //}else if (strArray[0] === "inv" || "inventory"){
+        //narration = currentPlayer.inventory(currentPlayer);
+        //textNode.append('<p>' + narration + '</p>');
       }else if (strArray.length >= 1){
         //have the player process the complete command
         narration = comprehend(strArray, currentRoom);
@@ -110,9 +109,10 @@
       }
       //// push to the nouns array
       //console.log(currentPlayer.knownItems);
-      var availableItems = currentPlayer.inventory.concat(currentRoom.containedItems).concat(currentRoom),
+      
+      
+      var availableItems = currentPlayer.inventory.concat(app.fn.get_all_room_items(currentRoom)).concat(currentRoom),
           numItems = availableItems.length;
-      //console.log(currentPlayer.knownItems.playerLocation);
       if (numWords > 1){
         //loop the words and check it against the available items
         for (var j = 0; j < numWords; j++) {
@@ -157,6 +157,7 @@
         }else{
           textNode.append("Sometimes the best course of action is to take no action, but that's not the case here.");
         }
+        $('.readout').animate({ scrollTop: $(document).height() }, "fast"); 
       }
     });
 });

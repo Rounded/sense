@@ -13,6 +13,18 @@ app.fn = {
 	getParamNames: function(theFunction) {
     var funStr = theFunction.toString();
     return funStr.slice(funStr.indexOf('(')+1, funStr.indexOf(')')).match(/([^\s,]+)/g) || '';
+  },
+  get_all_room_items: function(currentRoom){
+    var roomItems = [];
+    var numRoomItems = currentRoom.containedItems.length;
+    for (var i = 0; i < numRoomItems; i++){
+      roomItems.push(currentRoom.containedItems[i]);
+      var numRoomItemsItems = currentRoom.containedItems[i].containedItems.length;
+      for (var j = 0; j < numRoomItemsItems; j++){
+        roomItems.push(currentRoom.containedItems[i].containedItems[j]);
+      }
+    }
+    return roomItems;
   }
 };
 })(window, $, window.app || {});

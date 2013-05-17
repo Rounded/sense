@@ -95,15 +95,14 @@ h1 {
   font: normal 0.8em/1.5em 'Cousine', sans-serif;
   color: #424242;
   height: 320px;
+  overflow-y: scroll;
   margin: 0 0 5px;
   padding: 1.4em;
-  overflow: hidden;
   background-color: #cec5b1;
   box-shadow: inset -4px -4px 80px rgba(0, 0, 0, 0.8);
 }
 .readout-content {
   position: absolute;
-  bottom: 1.4em;
 }
 span.terminal {
   width: 5%;
