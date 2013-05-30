@@ -3,6 +3,7 @@
 //Item class
 app.Item = function Item(opts){
   var options = opts || {};
+  this.ambientLight = options.ambientLight || 0;
   this.isStationary = options.isStationary || false;
   this.descriptor = options.descriptor;
   this.isContainer = options.isContainer || false;
@@ -22,22 +23,29 @@ app.Item = function Item(opts){
 
 app.Item.prototype = {
   listContainedItems:function(){
-    if (this.isContainer){
-      //get contained items
-      var numContained = this.containedItems.length,
-          list = [];
-      if (numContained !== 0) {
-        for (var i = 0; i < numContained; i++ ){
-          list.push(this.containedItems[i].descriptor[0]);
-        }
-        return "<p>The item contains:</p>" + list.join('<br />');
-      }else{
-        return "The container is empty :(";
+    if (!this.isContainer){
+      return 'The ' + this.descriptor[0] + ' isn\'t a container.'
+    }
+    //get contained items
+    var numContained = this.containedItems.length,
+        list = [];
+    if (numContained == 0) {
+      return "The container is empty :(";
+    }
+    for (var i = 0; i < numContained; i++ ){
+      list.push(this.containedItems[i].descriptor[0]);
+    }
+    return "<p>The "+this.descriptor[0]+" contains:</p>" + list.join('<br />');
+  },
+  hasItem:function(whichItem){
+    return roomItems;
+    for (var i = 0; i < this.containedItems.length; i++) {
+      if (whichItem === this.containedItems[i]) {
+        return true;
       }
-    }else{
-      return null;
     }
   }
+  
   // getDescriptor:function(){
   //   if(typeof this.descriptor !== "undefined")
   //     return app.fn.article(this.descriptor) + this.descriptor;

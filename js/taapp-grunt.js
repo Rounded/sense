@@ -20,7 +20,7 @@ app.fn = {
     var funStr = theFunction.toString();
     return funStr.slice(funStr.indexOf('(')+1, funStr.indexOf(')')).match(/([^\s,]+)/g) || '';
   },
-  get_all_room_items: function(currentRoom){
+  getAllRoomItems: function(currentRoom){
     var roomItems = [];
     var numRoomItems = currentRoom.containedItems.length;
     for (var i = 0; i < numRoomItems; i++){
@@ -39,6 +39,7 @@ app.fn = {
 //Item class
 app.Item = function Item(opts){
   var options = opts || {};
+  this.ambientLight = options.ambientLight || 0;
   this.isStationary = options.isStationary || false;
   this.descriptor = options.descriptor;
   this.isContainer = options.isContainer || false;
@@ -58,22 +59,29 @@ app.Item = function Item(opts){
 
 app.Item.prototype = {
   listContainedItems:function(){
-    if (this.isContainer){
-      //get contained items
-      var numContained = this.containedItems.length,
-          list = [];
-      if (numContained !== 0) {
-        for (var i = 0; i < numContained; i++ ){
-          list.push(this.containedItems[i].descriptor[0]);
-        }
-        return "<p>The item contains:</p>" + list.join('<br />');
-      }else{
-        return "The container is empty :(";
+    if (!this.isContainer){
+      return 'The ' + this.descriptor[0] + ' isn\'t a container.'
+    }
+    //get contained items
+    var numContained = this.containedItems.length,
+        list = [];
+    if (numContained == 0) {
+      return "The container is empty :(";
+    }
+    for (var i = 0; i < numContained; i++ ){
+      list.push(this.containedItems[i].descriptor[0]);
+    }
+    return "<p>The "+this.descriptor[0]+" contains:</p>" + list.join('<br />');
+  },
+  hasItem:function(whichItem){
+    return roomItems;
+    for (var i = 0; i < this.containedItems.length; i++) {
+      if (whichItem === this.containedItems[i]) {
+        return true;
       }
-    }else{
-      return null;
     }
   }
+  
   // getDescriptor:function(){
   //   if(typeof this.descriptor !== "undefined")
   //     return app.fn.article(this.descriptor) + this.descriptor;
@@ -179,16 +187,16 @@ app.Item.prototype = {
     //     }
     //   }
     // },
-    inventory:function(player){
+    checkInventory:function(player){
           var numItems = player.inventory.length;
           if (numItems>0){
-            var foundItems = 'In the ' + player.playerName + ' You find:<br />';
+            var foundItems = 'You have:<br />';
             for (var i = 0; i < numItems; i++) {
               foundItems +=  player.inventory[i].descriptor[0] +'<br />';
             }
             return foundItems;
           }else{
-            return 'You grope around in the ' + player.playerName + ', but find nothing. Dissapoint.';
+            return 'You have nothing. Dissapoint.';
           }
         
     },
@@ -196,7 +204,7 @@ app.Item.prototype = {
       if (theItem.length >= 2){
         return 'Try searching one item at a time';
       }
-
+      //TODO: Look into using the items list contained items function
       var item = theItem[0],
           numItems = item.containedItems.length;
       if (!item.isContainer){
@@ -219,7 +227,7 @@ app.Item.prototype = {
       }
       var item = theItem[0];
       if (item.isStationary){
-        return 'You cannot take the ' + item.descriptor[0];
+        return 'You cannot take a stationary object like the ' + item.descriptor[0];
       }
       if (this.hasItem(item)){
         return 'You already have the ' + item.descriptor[0];
@@ -263,7 +271,34 @@ app.Item.prototype = {
 
     },
     put:function(theItems, room){
-      //
+      if (theItems < 2){
+        return "You need to put something <em>in</em> something else";
+      }
+      if (theItems > 2){
+        return "Try putting one item in at a time."
+      }
+      var item = theItems[0];
+          container = theItems[1];
+      if (item.isStationary){
+        return 'You cannot put a stationary object like the ' + item.descriptor[0] + " in the "+ container.descriptor[0];
+      }
+      if (!container.isContainer){
+        return "The second item is not a container."
+      }
+      if (this.hasItem(item)){
+        var index = this.inventory.indexOf(item);
+        this.inventory.splice(index, 1);
+        container.containedItems.push(item);
+        return "You put the " +item.descriptor[0]+" in the "+container.descriptor[0]+"."
+      }else if(room.hasItem(item)){
+        var index = room.containedItems.indexOf(item);
+        room.containedItems.splice(index, 1);
+        container.containedItems.push(item);
+        return "You put the " +item.descriptor[0]+" in the "+container.descriptor[0]+"."
+      }else{
+        return "The item is not within your grasp!"
+      }
+        
     }
   };
 })(window, $, window.app || {});
@@ -295,7 +330,11 @@ app.Room = function Room(opts){
   this.smells = options.smells;
   this.touch = options.touch;
 };
-app.Room.prototype = new app.Item();
+app.Room.prototype = new app.Item({
+  broadcastChat:function(player, message){
+    return player.playerName + 'says, \"' + message + '\"';
+  }
+});
 // app.Room.prototype = {
 //   // listContainedItems:function(){
 //   //   //get contained items
@@ -365,7 +404,7 @@ app.Room.prototype = new app.Item();
     //Create Room Object passing descriptions and items in
     var currentRoom = new app.Room({
       descriptor : ["room","cell","area","here"],
-      ambientLight : 1,
+      ambientLight : 0,
       containedItems : [items.puddle, items.sword],
       visualSecretThreshold : 1,
       visualSecret : "There is some writing on the wall. Scratched into the stone, it reads. RDA was here.",
@@ -374,7 +413,7 @@ app.Room.prototype = new app.Item();
       touch : "It's cool where you are. You feel solid and cold stone beneath your feet.",
       smells : "You sniff the air and are assaulted with the smell of decay and hint of lamp oil."
     });
-    console.log(currentRoom)
+    
     //Create Player
     var currentPlayer = new app.Player(
       {
@@ -391,21 +430,24 @@ app.Room.prototype = new app.Item();
 
     //read function
     var read = function(value){
+      var dict = {'help' : '<SPAN> FOO </span>'}
+
+      dict[value]
       var str = value.toLowerCase(),
           strArray = str.split(" ");
       if (strArray[0] === "save") {
         //save state
         textNode.append('<p>Your progress has been saved in the imperial scrolls of honor... not really, but soon. Consider it hardcore mode!</p>');
-      }else if (strArray[0] === "help"){
+      }else if (strArray[0] == "help"){
         //textNode.append(helpText);
         textNode.append('<p>All you have are your senses (<span class="verb_hint">look, listen, feel, smell, taste)</span><br />');
         textNode.append('Example Commands:<br />');
         textNode.append('<span class="verb_hint">look</span> <span class="noun_hint">puddle</span> <br />');
         textNode.append('<span class="verb_hint">listen</span><br />');
         textNode.append('<em>Enter commands below.</em></p>');
-      //}else if (strArray[0] === "inv" || "inventory"){
-        //narration = currentPlayer.inventory(currentPlayer);
-        //textNode.append('<p>' + narration + '</p>');
+      }else if (strArray[0] == "inv" || strArray[0] == "inventory"){
+        narration = currentPlayer.checkInventory(currentPlayer);
+        textNode.append('<p>' + narration + '</p>');
       }else if (strArray.length >= 1){
         //have the player process the complete command
         narration = comprehend(strArray, currentRoom);
@@ -438,7 +480,7 @@ app.Room.prototype = new app.Item();
       //console.log(currentPlayer.knownItems);
       
       
-      var availableItems = currentPlayer.inventory.concat(app.fn.get_all_room_items(currentRoom)).concat(currentRoom),
+      var availableItems = currentPlayer.inventory.concat(app.fn.getAllRoomItems(currentRoom)).concat(currentRoom),
           numItems = availableItems.length;
       if (numWords > 1){
         //loop the words and check it against the available items
@@ -447,8 +489,7 @@ app.Room.prototype = new app.Item();
             //Check the descriptor array against the words
             var numNames = availableItems[k].descriptor.length;
             for (var l = 0; l < numNames; l++) {
-              //Check to see if any of the words match an available item;
-              //TODO: Need to handle duplicate items here
+              // Check to see if any of the words match an available item
               if (availableItems[k].descriptor[l] === words[j]) {
                 nouns.push(availableItems[k]);
               }
@@ -484,7 +525,7 @@ app.Room.prototype = new app.Item();
         }else{
           textNode.append("Sometimes the best course of action is to take no action, but that's not the case here.");
         }
-        $('.readout').animate({ scrollTop: $(document).height() }, "fast"); 
+        $('.readout').animate({ scrollTop: $('.readout-content').height() }, "fast"); 
       }
     });
 });

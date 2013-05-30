@@ -14,7 +14,7 @@ app.fn = {
     var funStr = theFunction.toString();
     return funStr.slice(funStr.indexOf('(')+1, funStr.indexOf(')')).match(/([^\s,]+)/g) || '';
   },
-  get_all_room_items: function(currentRoom){
+  getAllRoomItems: function(currentRoom){
     var roomItems = [];
     var numRoomItems = currentRoom.containedItems.length;
     for (var i = 0; i < numRoomItems; i++){

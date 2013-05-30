@@ -14,7 +14,11 @@ app.Room = function Room(opts){
   this.smells = options.smells;
   this.touch = options.touch;
 };
-app.Room.prototype = new app.Item();
+app.Room.prototype = new app.Item({
+  broadcastChat:function(player, message){
+    return player.playerName + 'says, \"' + message + '\"';
+  }
+});
 // app.Room.prototype = {
 //   // listContainedItems:function(){
 //   //   //get contained items

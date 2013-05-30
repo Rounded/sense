@@ -38,7 +38,7 @@
     //Create Room Object passing descriptions and items in
     var currentRoom = new app.Room({
       descriptor : ["room","cell","area","here"],
-      ambientLight : 1,
+      ambientLight : 0,
       containedItems : [items.puddle, items.sword],
       visualSecretThreshold : 1,
       visualSecret : "There is some writing on the wall. Scratched into the stone, it reads. RDA was here.",
@@ -47,7 +47,7 @@
       touch : "It's cool where you are. You feel solid and cold stone beneath your feet.",
       smells : "You sniff the air and are assaulted with the smell of decay and hint of lamp oil."
     });
-    console.log(currentRoom)
+    
     //Create Player
     var currentPlayer = new app.Player(
       {
@@ -64,21 +64,24 @@
 
     //read function
     var read = function(value){
+      var dict = {'help' : '<SPAN> FOO </span>'}
+
+      dict[value]
       var str = value.toLowerCase(),
           strArray = str.split(" ");
       if (strArray[0] === "save") {
         //save state
         textNode.append('<p>Your progress has been saved in the imperial scrolls of honor... not really, but soon. Consider it hardcore mode!</p>');
-      }else if (strArray[0] === "help"){
+      }else if (strArray[0] == "help"){
         //textNode.append(helpText);
         textNode.append('<p>All you have are your senses (<span class="verb_hint">look, listen, feel, smell, taste)</span><br />');
         textNode.append('Example Commands:<br />');
         textNode.append('<span class="verb_hint">look</span> <span class="noun_hint">puddle</span> <br />');
         textNode.append('<span class="verb_hint">listen</span><br />');
         textNode.append('<em>Enter commands below.</em></p>');
-      //}else if (strArray[0] === "inv" || "inventory"){
-        //narration = currentPlayer.inventory(currentPlayer);
-        //textNode.append('<p>' + narration + '</p>');
+      }else if (strArray[0] == "inv" || strArray[0] == "inventory"){
+        narration = currentPlayer.checkInventory(currentPlayer);
+        textNode.append('<p>' + narration + '</p>');
       }else if (strArray.length >= 1){
         //have the player process the complete command
         narration = comprehend(strArray, currentRoom);
@@ -111,7 +114,7 @@
       //console.log(currentPlayer.knownItems);
       
       
-      var availableItems = currentPlayer.inventory.concat(app.fn.get_all_room_items(currentRoom)).concat(currentRoom),
+      var availableItems = currentPlayer.inventory.concat(app.fn.getAllRoomItems(currentRoom)).concat(currentRoom),
           numItems = availableItems.length;
       if (numWords > 1){
         //loop the words and check it against the available items
@@ -120,8 +123,7 @@
             //Check the descriptor array against the words
             var numNames = availableItems[k].descriptor.length;
             for (var l = 0; l < numNames; l++) {
-              //Check to see if any of the words match an available item;
-              //TODO: Need to handle duplicate items here
+              // Check to see if any of the words match an available item
               if (availableItems[k].descriptor[l] === words[j]) {
                 nouns.push(availableItems[k]);
               }
@@ -157,7 +159,7 @@
         }else{
           textNode.append("Sometimes the best course of action is to take no action, but that's not the case here.");
         }
-        $('.readout').animate({ scrollTop: $(document).height() }, "fast"); 
+        $('.readout').animate({ scrollTop: $('.readout-content').height() }, "fast"); 
       }
     });
 });

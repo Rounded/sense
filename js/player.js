@@ -94,16 +94,16 @@
     //     }
     //   }
     // },
-    inventory:function(player){
+    checkInventory:function(player){
           var numItems = player.inventory.length;
           if (numItems>0){
-            var foundItems = 'In the ' + player.playerName + ' You find:<br />';
+            var foundItems = 'You have:<br />';
             for (var i = 0; i < numItems; i++) {
               foundItems +=  player.inventory[i].descriptor[0] +'<br />';
             }
             return foundItems;
           }else{
-            return 'You grope around in the ' + player.playerName + ', but find nothing. Dissapoint.';
+            return 'You have nothing. Dissapoint.';
           }
         
     },
@@ -111,7 +111,7 @@
       if (theItem.length >= 2){
         return 'Try searching one item at a time';
       }
-
+      //TODO: Look into using the items list contained items function
       var item = theItem[0],
           numItems = item.containedItems.length;
       if (!item.isContainer){
@@ -134,7 +134,7 @@
       }
       var item = theItem[0];
       if (item.isStationary){
-        return 'You cannot take the ' + item.descriptor[0];
+        return 'You cannot take a stationary object like the ' + item.descriptor[0];
       }
       if (this.hasItem(item)){
         return 'You already have the ' + item.descriptor[0];
@@ -178,7 +178,34 @@
 
     },
     put:function(theItems, room){
-      //
+      if (theItems < 2){
+        return "You need to put something <em>in</em> something else";
+      }
+      if (theItems > 2){
+        return "Try putting one item in at a time."
+      }
+      var item = theItems[0];
+          container = theItems[1];
+      if (item.isStationary){
+        return 'You cannot put a stationary object like the ' + item.descriptor[0] + " in the "+ container.descriptor[0];
+      }
+      if (!container.isContainer){
+        return "The second item is not a container."
+      }
+      if (this.hasItem(item)){
+        var index = this.inventory.indexOf(item);
+        this.inventory.splice(index, 1);
+        container.containedItems.push(item);
+        return "You put the " +item.descriptor[0]+" in the "+container.descriptor[0]+"."
+      }else if(room.hasItem(item)){
+        var index = room.containedItems.indexOf(item);
+        room.containedItems.splice(index, 1);
+        container.containedItems.push(item);
+        return "You put the " +item.descriptor[0]+" in the "+container.descriptor[0]+"."
+      }else{
+        return "The item is not within your grasp!"
+      }
+        
     }
   };
 })(window, $, window.app || {});
